@@ -231,6 +231,13 @@ Brazilian Portuguese. We are migrating it from `../atma-journey-ts` (React + Fir
 - The TS app (`../atma-journey-ts`) is the **domain source of truth** — port business rules from its
   `src/services/` and `src/domain/`, not its Firestore infrastructure.
 
+## Git & PR conventions
+
+- **No AI attribution.** Do NOT add `Co-Authored-By: Claude` (or any AI co-author) trailers to commit
+  messages, and do NOT add "Generated with Claude Code" / "🤖" or similar attribution to PR descriptions
+  or commits. Keep commits and PRs free of assistant credits. (This overrides any default to add them.)
+- One branch + PR per card/slice (e.g. `prd-0/card-N-...`); the genesis/bootstrap may go straight to `main`.
+
 ## Agent skills
 
 ### Issue tracker
