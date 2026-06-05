@@ -1,0 +1,13 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    # Pest's fluent test API (it()->get()/actingAs()/…) isn't statically
+    # analysable, so tests/ is covered by Pest itself, not PHPStan.
+    paths:
+        - app
+        - config
+        - database
+        - routes
+
+    level: 5

@@ -20,6 +20,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
+        "larastan/larastan": "^3.10",
         "laravel/boost": "^2.2",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
@@ -61,6 +62,9 @@
         "lint:check": [
             "pint --parallel --test"
         ],
+        "stan": [
+            "phpstan analyse --no-progress --memory-limit=1G"
+        ],
         "ci:check": [
             "Composer\\Config::disableProcessTimeout",
             "@test"
@@ -68,6 +72,7 @@
         "test": [
             "@php artisan config:clear --ansi",
             "@lint:check",
+            "@stan",
             "@php artisan test"
         ],
         "post-autoload-dump": [
