@@ -1,24 +1,30 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Actions\Tenancy\RegisterClinic;
+use App\Actions\Tenancy\RegisterClinicData;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
-function validClinicInput(array $overrides = []): array
+/**
+ * @param  array<string, string>  $overrides
+ */
+function clinicData(array $overrides = []): RegisterClinicData
 {
-    return array_merge([
-        'clinic_name' => 'Clínica Atma',
+    return new RegisterClinicData(...array_merge([
+        'clinicName' => 'Clínica Atma',
         'slug' => 'clinica-atma',
-        'admin_name' => 'Dra. Maria Silva',
-        'admin_email' => 'maria@clinica-atma.test',
-        'admin_password' => 'super-secret-password',
-        'admin_password_confirmation' => 'super-secret-password',
-    ], $overrides);
+        'adminName' => 'Dra. Maria Silva',
+        'adminEmail' => 'maria@clinica-atma.test',
+        'adminPassword' => 'super-secret-password',
+        'adminPasswordConfirmation' => 'super-secret-password',
+    ], $overrides));
 }
 
 it('provisions a tenant, domain, database and admin user', function () {
-    $tenant = app(RegisterClinic::class)(validClinicInput());
+    $tenant = app(RegisterClinic::class)(clinicData());
 
     expect($tenant)->toBeInstanceOf(Tenant::class)
         ->and($tenant->slug)->toBe('clinica-atma')
@@ -35,13 +41,13 @@ it('provisions a tenant, domain, database and admin user', function () {
 it('rejects a duplicate slug', function () {
     Tenant::create(['name' => 'Existing', 'slug' => 'clinica-atma']);
 
-    expect(fn () => app(RegisterClinic::class)(validClinicInput()))
+    expect(fn () => app(RegisterClinic::class)(clinicData()))
         ->toThrow(ValidationException::class);
 
     Tenant::where('slug', 'clinica-atma')->first()->delete();
 });
 
 it('rejects an invalid or reserved slug', function (string $slug) {
-    expect(fn () => app(RegisterClinic::class)(validClinicInput(['slug' => $slug])))
+    expect(fn () => app(RegisterClinic::class)(clinicData(['slug' => $slug])))
         ->toThrow(ValidationException::class);
 })->with(['', 'UPPER', 'has space', '-leading', 'www', 'admin', 'api']);

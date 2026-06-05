@@ -27,29 +27,26 @@ class RegisterClinic
         'dashboard', 'test', 'localhost', 'tenant',
     ];
 
-    /**
-     * @param  array<string, mixed>  $input
-     */
-    public function __invoke(array $input): Tenant
+    public function __invoke(RegisterClinicData $data): Tenant
     {
-        $data = $this->validate($input);
+        $this->validate($data);
 
         $tenant = Tenant::create([
-            'name' => $data['clinic_name'],
-            'slug' => $data['slug'],
+            'name' => $data->clinicName,
+            'slug' => $data->slug,
             'plan' => 'trial',
             'status' => 'active',
         ]);
 
         $tenant->domains()->create([
-            'domain' => $data['slug'].'.'.$this->centralDomain(),
+            'domain' => $data->slug.'.'.$this->centralDomain(),
         ]);
 
         $tenant->run(function () use ($data): void {
             User::create([
-                'name' => $data['admin_name'],
-                'email' => $data['admin_email'],
-                'password' => $data['admin_password'],
+                'name' => $data->adminName,
+                'email' => $data->adminEmail,
+                'password' => $data->adminPassword,
                 'role' => UserRole::Admin,
             ]);
         });
@@ -57,13 +54,16 @@ class RegisterClinic
         return $tenant;
     }
 
-    /**
-     * @param  array<string, mixed>  $input
-     * @return array<string, mixed>
-     */
-    private function validate(array $input): array
+    private function validate(RegisterClinicData $data): void
     {
-        return Validator::make($input, [
+        Validator::make([
+            'clinic_name' => $data->clinicName,
+            'slug' => $data->slug,
+            'admin_name' => $data->adminName,
+            'admin_email' => $data->adminEmail,
+            'admin_password' => $data->adminPassword,
+            'admin_password_confirmation' => $data->adminPasswordConfirmation,
+        ], [
             'clinic_name' => ['required', 'string', 'max:255'],
             'slug' => [
                 'required', 'string', 'lowercase', 'max:63',

@@ -226,6 +226,10 @@ Brazilian Portuguese. We are migrating it from `../atma-journey-ts` (React + Fir
 - Pipeline stages (enum): `primeiro_contato, avaliacao, em_analise, orcamento_enviado, negociando,
   orcamento_aceito, agendado, retorno, concluido, desistentes`.
 - User roles (enum): `admin`, `staff`. Finer RBAC is deferred — design for it, don't build it yet.
+- **Strict types everywhere.** Every PHP file declares `declare(strict_types=1)` (enforced by Pint's
+  `declare_strict_types` rule — `composer lint` adds it). Prefer **typed parameters and readonly DTOs**
+  over loose `array $input`; if an array is unavoidable, give it an **array-shape PHPDoc**. Avoid `mixed`
+  at public boundaries. Actions take typed input (e.g. `RegisterClinic(RegisterClinicData $data)`).
 
 ## Working rules for this migration
 

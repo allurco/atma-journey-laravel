@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Livewire\Onboarding\Register;
 use App\Models\Tenant;
 use App\Models\User;
