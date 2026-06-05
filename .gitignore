@@ -24,3 +24,6 @@ yarn-error.log
 /.zed
 .DS_Store
 .phpactor.json
+
+# Playwright MCP screenshots
+/.playwright-mcp

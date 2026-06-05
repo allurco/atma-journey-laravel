@@ -26,7 +26,7 @@ pest()->extend(TenantTestCase::class)
 // Feature-root files assign their base via an in-file uses() call.
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
-    ->in('Feature/Tenancy');
+    ->in('Feature/Tenancy', 'Feature/Onboarding');
 
 /*
 |--------------------------------------------------------------------------
