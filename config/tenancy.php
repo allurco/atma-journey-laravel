@@ -138,13 +138,20 @@ return [
         'suffix_storage_path' => true,
 
         /**
+         * Keep asset() returning GLOBAL URLs (Vite build + fonts are shared across
+         * tenants). Tenant-private files are served via Storage/signed routes, not
+         * asset(), so we don't need tenant-aware asset() — and enabling it 404s the
+         * compiled CSS/JS on tenant domains.
+         */
+
+        /**
          * By default, asset() calls are made multi-tenant too. You can use global_asset() and mix()
          * for global, non-tenant-specific assets. However, you might have some issues when using
          * packages that use asset() calls inside the tenant app. To avoid such issues, you can
          * disable asset() helper tenancy and explicitly use tenant_asset() calls in places
          * where you want to use tenant-specific assets (product images, avatars, etc).
          */
-        'asset_helper_tenancy' => true,
+        'asset_helper_tenancy' => false,
     ],
 
     /**

@@ -27,5 +27,10 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    // Tenant routes are added in PRD-0 card 5 (Tenant login on its subdomain).
+    Route::middleware(['auth', 'verified'])->group(function () {
+        Route::view('dashboard', 'dashboard')->name('dashboard');
+    });
+
+    // Authenticated clinic settings (profile, security, appearance).
+    require __DIR__.'/settings.php';
 });

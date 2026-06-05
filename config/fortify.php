@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use Laravel\Fortify\Features;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 return [
 
@@ -103,7 +105,11 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => [
+        'web',
+        InitializeTenancyByDomain::class,
+        PreventAccessFromCentralDomains::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -163,7 +169,8 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Clinic staff are created via signup (admin) + invites (later PRD),
+        // not self-registration — so Features::registration() is intentionally omitted.
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
