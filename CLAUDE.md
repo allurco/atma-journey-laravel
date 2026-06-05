@@ -203,6 +203,11 @@ Brazilian Portuguese. We are migrating it from `../atma-journey-ts` (React + Fir
   Blade + Alpine components styled to match Flux's tokens: Kanban (Pipeline, via SortableJS),
   calendar + date/time pickers (Scheduling), charts (Dashboard), combobox/searchable-select, file
   upload, tabs. `x-ui.*` lives in `resources/views/components/ui/`; free Flux lives in `resources/views/flux/`.
+- **Port the React app's design.** When a screen exists in the TS app
+  (`../atma-journey-ts/src/components/`), replicate its **layout, UX, and visual design** in Blade +
+  Tailwind (not React) — the TS components are the visual source of truth. Brand language: teal
+  `#0D9488` primary, warm `#FAFAF8` background, slate text, rounded-`xl` inputs with teal focus rings,
+  the 3-layer ATMA logo (`<x-atma-logo>`). Screens with no TS equivalent are designed in the same language.
 - **Multitenancy:** **`stancl/tenancy`**, **database-per-tenant**, **domain-based** identification,
   self-serve provisioning + custom domain mapping. `users` live in the **tenant** DB (one clinic per user);
   the **central** DB holds `tenants`, `domains`, billing, and Atma super-admins.
@@ -221,6 +226,10 @@ Brazilian Portuguese. We are migrating it from `../atma-journey-ts` (React + Fir
 - Pipeline stages (enum): `primeiro_contato, avaliacao, em_analise, orcamento_enviado, negociando,
   orcamento_aceito, agendado, retorno, concluido, desistentes`.
 - User roles (enum): `admin`, `staff`. Finer RBAC is deferred — design for it, don't build it yet.
+- **Strict types everywhere.** Every PHP file declares `declare(strict_types=1)` (enforced by Pint's
+  `declare_strict_types` rule — `composer lint` adds it). Prefer **typed parameters and readonly DTOs**
+  over loose `array $input`; if an array is unavoidable, give it an **array-shape PHPDoc**. Avoid `mixed`
+  at public boundaries. Actions take typed input (e.g. `RegisterClinic(RegisterClinicData $data)`).
 
 ## Working rules for this migration
 
