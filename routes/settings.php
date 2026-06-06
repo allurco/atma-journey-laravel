@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Settings\Specialties;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -9,6 +10,9 @@ Route::middleware(['auth'])->group(function () {
     Route::redirect('configuracoes', 'settings/profile')->name('configuracoes');
 
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
+
+    // Catalog (admin-only writes via the manage-clinic-settings gate)
+    Route::get('settings/especialidades', Specialties::class)->name('especialidades');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

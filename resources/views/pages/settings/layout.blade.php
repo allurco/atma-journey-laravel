@@ -4,7 +4,7 @@
         ['label' => 'Conta', 'route' => 'profile.edit'],
         ['label' => 'Segurança', 'route' => 'security.edit'],
         ['label' => 'Aparência', 'route' => 'appearance.edit'],
-        ['label' => 'Especialidades', 'route' => null],
+        ['label' => 'Especialidades', 'route' => 'especialidades'],
         ['label' => 'Procedimentos', 'route' => null],
         ['label' => 'Médicos', 'route' => null],
     ];

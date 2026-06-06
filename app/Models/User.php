@@ -17,6 +17,9 @@ use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 
+/**
+ * @property UserRole $role
+ */
 #[Fillable(['name', 'email', 'password', 'role'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
@@ -36,6 +39,14 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
+    }
+
+    /**
+     * Whether the user is a clinic admin (full settings access).
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === UserRole::Admin;
     }
 
     /**
