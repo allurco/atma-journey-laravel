@@ -96,6 +96,22 @@ class Patient extends Model
     }
 
     /**
+     * @return HasMany<Budget, $this>
+     */
+    public function budgets(): HasMany
+    {
+        return $this->hasMany(Budget::class);
+    }
+
+    /**
+     * @return HasMany<Transaction, $this>
+     */
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class);
+    }
+
+    /**
      * URL to the tenant-scoped photo route, or null when no photo is set.
      */
     public function photoUrl(): ?string

@@ -48,6 +48,11 @@
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" /></svg>
                         Agendar
                     </a>
+                    <a href="{{ route('financeiro', ['novo' => $patient->id]) }}" wire:navigate
+                        class="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-100">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                        Orçamento
+                    </a>
                     <a href="{{ route('pipeline', ['novo' => $patient->id]) }}" wire:navigate
                         class="flex items-center gap-1.5 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-700 transition-colors hover:bg-teal-100">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6Z" /></svg>
@@ -75,6 +80,14 @@
                 'text-slate-400 hover:text-slate-600' => $tab !== 'timeline',
             ])>
             Linha do tempo
+        </button>
+        <button type="button" wire:click="$set('tab', 'financial')"
+            @class([
+                'pb-3 text-sm font-medium transition-colors',
+                'border-b-2 border-teal-500 text-teal-700' => $tab === 'financial',
+                'text-slate-400 hover:text-slate-600' => $tab !== 'financial',
+            ])>
+            Financeiro
         </button>
     </div>
 
@@ -127,7 +140,7 @@
                 </div>
             </div>
         </div>
-    @else
+    @elseif ($tab === 'timeline')
         {{-- Linha do tempo --}}
         <div class="mt-6 space-y-6">
             <div class="rounded-2xl border border-slate-200 bg-white">
@@ -190,6 +203,44 @@
                         </div>
                     @empty
                         <p class="py-12 text-center text-sm text-slate-400">Nenhuma interação registrada.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @else
+        {{-- Financeiro --}}
+        <div class="mt-6 space-y-6">
+            <div class="rounded-2xl border border-slate-200 bg-white p-6">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-sm font-semibold text-slate-800">Valor do paciente (LTV)</h2>
+                    <span class="text-lg font-semibold text-emerald-600">R$ {{ number_format((float) $patient->ltv, 2, ',', '.') }}</span>
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <h2 class="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-800">Orçamentos</h2>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($budgets as $budget)
+                        <div class="flex items-center justify-between px-6 py-3" wire:key="pbudget-{{ $budget->id }}">
+                            <span class="text-sm text-slate-700">R$ {{ number_format((float) $budget->total, 2, ',', '.') }}</span>
+                            <x-ui.badge :color="$budget->status->badgeClasses()">{{ $budget->status->label() }}</x-ui.badge>
+                        </div>
+                    @empty
+                        <p class="px-6 py-8 text-center text-sm text-slate-400">Nenhum orçamento.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <h2 class="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-800">Transações</h2>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($transactions as $transaction)
+                        <div class="flex items-center justify-between px-6 py-3" wire:key="ptx-{{ $transaction->id }}">
+                            <span class="text-sm text-slate-700">R$ {{ number_format((float) $transaction->total, 2, ',', '.') }} · {{ $transaction->payment_method->label() }}</span>
+                            <x-ui.badge :color="$transaction->status->badgeClasses()">{{ $transaction->status->label() }}</x-ui.badge>
+                        </div>
+                    @empty
+                        <p class="px-6 py-8 text-center text-sm text-slate-400">Nenhuma transação.</p>
                     @endforelse
                 </div>
             </div>

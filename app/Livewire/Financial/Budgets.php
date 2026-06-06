@@ -5,14 +5,17 @@ declare(strict_types=1);
 namespace App\Livewire\Financial;
 
 use App\Actions\Financial\ConvertBudgetToTransaction;
+use App\Actions\Financial\MarkTransactionPaid;
 use App\Actions\Financial\SaveBudget;
 use App\Actions\Financial\SaveBudgetData;
 use App\Actions\Financial\SetBudgetStatus;
 use App\Enums\BudgetStatus;
 use App\Enums\PaymentMethod;
+use App\Enums\PaymentStatus;
 use App\Models\Budget;
 use App\Models\Patient;
 use App\Models\Procedure;
+use App\Models\Transaction;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -173,6 +176,13 @@ class Budgets extends Component
         $this->convertingBudgetId = null;
     }
 
+    public function markPaid(int $transactionId, MarkTransactionPaid $markTransactionPaid): void
+    {
+        $this->authorize('manage-financial');
+
+        $markTransactionPaid(Transaction::findOrFail($transactionId));
+    }
+
     public function cancel(): void
     {
         $this->showForm = false;
@@ -185,8 +195,16 @@ class Budgets extends Component
             fn (array $item): float => (float) $item['unit_price'] * (int) $item['quantity'] - (float) $item['discount'],
         );
 
+        $transactions = Transaction::with('patient')->latest()->get();
+
         return view('livewire.financial.budgets', [
             'budgets' => Budget::with('patient')->latest()->get(),
+            'transactions' => $transactions,
+            'revenue' => [
+                'total' => (float) $transactions->sum(fn (Transaction $t): float => (float) $t->total),
+                'paid' => (float) $transactions->where('status', PaymentStatus::Paid)->sum(fn (Transaction $t): float => (float) $t->total),
+                'pending' => (float) $transactions->where('status', PaymentStatus::Pending)->sum(fn (Transaction $t): float => (float) $t->total),
+            ],
             'patients' => Patient::orderBy('name')->get(['id', 'name']),
             'procedures' => Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'base_price']),
             'statuses' => BudgetStatus::cases(),
