@@ -23,6 +23,9 @@
                             <button wire:click="setBudgetStatus({{ $budget->id }}, '{{ $budget->status->next()->value }}')"
                                 class="text-sm text-teal-700 hover:text-teal-800">{{ $budget->status->next()->label() }} &rarr;</button>
                         @endif
+                        @if (in_array($budget->status, [\App\Enums\BudgetStatus::Approved, \App\Enums\BudgetStatus::Completed], true))
+                            <button wire:click="openConvert({{ $budget->id }})" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">Faturar</button>
+                        @endif
                         <button wire:click="edit({{ $budget->id }})" class="text-sm text-slate-500 hover:text-slate-700">Editar</button>
                     @endif
                 </div>
@@ -31,6 +34,30 @@
             <p class="px-4 py-12 text-center text-sm text-slate-400">Nenhum orçamento ainda.</p>
         @endforelse
     </div>
+
+    {{-- Convert (faturar) modal --}}
+    @if ($convertingBudgetId)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" wire:key="convert-form">
+            <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+                <h2 class="text-lg font-semibold text-slate-800">Faturar orçamento</h2>
+                <p class="mt-1 text-sm text-slate-500">Gera uma transação pendente para este orçamento.</p>
+
+                <div class="mt-4">
+                    <label class="mb-2 block text-sm font-medium text-slate-700">Forma de pagamento</label>
+                    <select wire:model="convertPaymentMethod" class="{{ $selectClasses }}">
+                        @foreach ($paymentMethods as $method)
+                            <option value="{{ $method->value }}">{{ $method->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="mt-5 flex items-center justify-end gap-3">
+                    <x-ui.button variant="secondary" type="button" wire:click="cancelConvert">Cancelar</x-ui.button>
+                    <x-ui.button type="button" wire:click="convert">Faturar</x-ui.button>
+                </div>
+            </div>
+        </div>
+    @endif
 
     {{-- Builder modal --}}
     @if ($showForm)

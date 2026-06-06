@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Livewire\Financial;
 
+use App\Actions\Financial\ConvertBudgetToTransaction;
 use App\Actions\Financial\SaveBudget;
 use App\Actions\Financial\SaveBudgetData;
 use App\Actions\Financial\SetBudgetStatus;
 use App\Enums\BudgetStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Budget;
 use App\Models\Patient;
 use App\Models\Procedure;
@@ -28,6 +30,10 @@ class Budgets extends Component
     public ?int $budgetForPatientId = null;
 
     public bool $showForm = false;
+
+    public ?int $convertingBudgetId = null;
+
+    public string $convertPaymentMethod = 'pix';
 
     public ?int $editingId = null;
 
@@ -138,6 +144,35 @@ class Budgets extends Component
         }
     }
 
+    public function openConvert(int $budgetId): void
+    {
+        $this->authorize('manage-financial');
+
+        $this->convertingBudgetId = $budgetId;
+        $this->convertPaymentMethod = 'pix';
+    }
+
+    public function convert(ConvertBudgetToTransaction $convertBudgetToTransaction): void
+    {
+        $this->authorize('manage-financial');
+
+        if ($this->convertingBudgetId === null) {
+            return;
+        }
+
+        $convertBudgetToTransaction(
+            Budget::findOrFail($this->convertingBudgetId),
+            PaymentMethod::from($this->convertPaymentMethod),
+        );
+
+        $this->convertingBudgetId = null;
+    }
+
+    public function cancelConvert(): void
+    {
+        $this->convertingBudgetId = null;
+    }
+
     public function cancel(): void
     {
         $this->showForm = false;
@@ -155,6 +190,7 @@ class Budgets extends Component
             'patients' => Patient::orderBy('name')->get(['id', 'name']),
             'procedures' => Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'base_price']),
             'statuses' => BudgetStatus::cases(),
+            'paymentMethods' => PaymentMethod::cases(),
             'formTotal' => (float) $formTotal,
             'canManage' => Gate::allows('manage-financial'),
         ]);

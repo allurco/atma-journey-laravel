@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $first_visit_date
  * @property int $total_appointments
  * @property int $missed_appointments
+ * @property string $ltv
  */
 class Patient extends Model
 {
