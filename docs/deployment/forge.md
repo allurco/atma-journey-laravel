@@ -40,29 +40,37 @@ Tenant subdomains (`{slug}.atmajourney.com.br`) all hit the same Forge site:
 
 ## 4. Deploy script (Forge → site → Deploy Script)
 
+Forge atomic (zero-downtime) release format. The one multitenancy-specific line is
+`tenants:migrate --force` — without it, **new tenant migrations never reach existing
+clinics**. It runs after the central `migrate` and before `$ACTIVATE_RELEASE`, so a bad
+tenant migration aborts the deploy instead of going live.
+
 ```bash
-cd /home/forge/atmajourney.com.br
-git pull origin $FORGE_SITE_BRANCH
+$CREATE_RELEASE()
+
+cd $FORGE_RELEASE_DIRECTORY
 
 $FORGE_COMPOSER install --no-dev --no-interaction --prefer-dist --optimize-autoloader
+$FORGE_PHP artisan optimize
+$FORGE_PHP artisan storage:link
+$FORGE_PHP artisan migrate --force            # central DB
+$FORGE_PHP artisan tenants:migrate --force    # every existing tenant DB
 
-# Build assets in CI (recommended) and commit /public/build, or build here:
-# npm ci && npm run build
+npm ci || npm install
+npm run build
 
-# Central migrations, then every existing tenant's migrations:
-$FORGE_PHP artisan migrate --force
-$FORGE_PHP artisan tenants:migrate --force
+$ACTIVATE_RELEASE()
 
-$FORGE_PHP artisan config:cache
-$FORGE_PHP artisan route:cache
-$FORGE_PHP artisan view:cache
-
-$FORGE_PHP artisan queue:restart
+$RESTART_QUEUES()
 ```
 
 > **New tenants need no script** — `RegisterClinic` → `TenantCreated` runs `CreateDatabase` +
 > `MigrateDatabase` automatically. `tenants:migrate` is only for applying **new** tenant
 > migrations to **existing** tenants on each deploy.
+>
+> `artisan optimize` caches config/routes/views, so the server `.env` (incl.
+> `SESSION_CONNECTION=central`) must be set before deploy. Forge re-runs the script on
+> every deploy, so the cache refreshes whenever `.env` changes — no manual `config:clear`.
 
 Useful stancl commands: `tenants:list`, `tenants:migrate`, `tenants:migrate-fresh`,
 `tenants:seed`, `tenants:run "<cmd>"`, `tenants:rollback`.
