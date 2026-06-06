@@ -1,6 +1,6 @@
 @php
     $tabs = [
-        ['label' => 'Clínica', 'route' => null],
+        ['label' => 'Clínica', 'route' => 'clinica'],
         ['label' => 'Conta', 'route' => 'profile.edit'],
         ['label' => 'Segurança', 'route' => 'security.edit'],
         ['label' => 'Aparência', 'route' => 'appearance.edit'],

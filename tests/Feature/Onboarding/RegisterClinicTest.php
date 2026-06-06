@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\Tenancy\RegisterClinic;
 use App\Actions\Tenancy\RegisterClinicData;
+use App\Models\Clinic;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +35,17 @@ it('provisions a tenant, domain, database and admin user', function () {
 
     expect($admin)->not->toBeNull()
         ->and($admin->role->value)->toBe('admin');
+
+    $tenant->delete();
+});
+
+it('seeds the clinic singleton with the signup name', function () {
+    $tenant = app(RegisterClinic::class)(clinicData());
+
+    $clinic = $tenant->run(fn () => Clinic::query()->first());
+
+    expect($clinic)->not->toBeNull()
+        ->and($clinic->name)->toBe('Clínica Atma');
 
     $tenant->delete();
 });

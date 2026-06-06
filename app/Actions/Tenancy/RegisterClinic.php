@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Tenancy;
 
 use App\Enums\UserRole;
+use App\Models\Clinic;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
@@ -48,6 +49,13 @@ class RegisterClinic
                 'email' => $data->adminEmail,
                 'password' => $data->adminPassword,
                 'role' => UserRole::Admin,
+            ]);
+
+            // Seed the clinic singleton; the clinic profile is the source of truth
+            // for the clinic name (central tenants.name is a synced copy).
+            Clinic::create([
+                'name' => $data->clinicName,
+                'email' => $data->adminEmail,
             ]);
         });
 
