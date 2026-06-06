@@ -65,6 +65,8 @@ class Show extends Component
             'events' => $this->patient->timelineEvents()->get(),
             'eventTypes' => TimelineEventType::cases(),
             'canManage' => Gate::allows('manage-patients'),
+            'budgets' => $this->patient->budgets()->latest()->get(),
+            'transactions' => $this->patient->transactions()->with('items')->latest()->get(),
         ]);
     }
 }

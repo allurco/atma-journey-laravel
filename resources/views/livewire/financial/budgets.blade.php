@@ -4,10 +4,26 @@
     <div class="mb-6 flex items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold text-slate-800">Financeiro</h1>
-            <p class="text-sm text-slate-500">Orçamentos da sua clínica.</p>
+            <p class="text-sm text-slate-500">Orçamentos e transações da sua clínica.</p>
         </div>
     </div>
 
+    {{-- Revenue strip --}}
+    <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        @php($revenueCards = [
+            ['label' => 'Receita total', 'value' => $revenue['total'], 'class' => 'text-slate-800'],
+            ['label' => 'Recebido', 'value' => $revenue['paid'], 'class' => 'text-emerald-600'],
+            ['label' => 'Pendente', 'value' => $revenue['pending'], 'class' => 'text-amber-600'],
+        ])
+        @foreach ($revenueCards as $card)
+            <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                <p class="text-xs uppercase tracking-wider text-slate-400">{{ $card['label'] }}</p>
+                <p class="mt-1 text-lg font-semibold {{ $card['class'] }}">R$ {{ number_format($card['value'], 2, ',', '.') }}</p>
+            </div>
+        @endforeach
+    </div>
+
+    <h2 class="mb-2 text-sm font-semibold text-slate-700">Orçamentos</h2>
     {{-- Budget list --}}
     <div class="rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white">
         @forelse ($budgets as $budget)
@@ -32,6 +48,27 @@
             </div>
         @empty
             <p class="px-4 py-12 text-center text-sm text-slate-400">Nenhum orçamento ainda.</p>
+        @endforelse
+    </div>
+
+    {{-- Transactions list --}}
+    <h2 class="mb-2 mt-8 text-sm font-semibold text-slate-700">Transações</h2>
+    <div class="rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white">
+        @forelse ($transactions as $transaction)
+            <div class="flex items-center justify-between gap-4 px-4 py-3" wire:key="tx-{{ $transaction->id }}">
+                <div class="min-w-0">
+                    <div class="truncate font-medium text-slate-800">{{ $transaction->patient->name }}</div>
+                    <div class="text-sm text-slate-500">R$ {{ number_format((float) $transaction->total, 2, ',', '.') }} · {{ $transaction->payment_method->label() }}</div>
+                </div>
+                <div class="flex flex-shrink-0 items-center gap-3">
+                    <x-ui.badge :color="$transaction->status->badgeClasses()">{{ $transaction->status->label() }}</x-ui.badge>
+                    @if ($canManage && $transaction->status === \App\Enums\PaymentStatus::Pending)
+                        <button wire:click="markPaid({{ $transaction->id }})" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">Marcar pago</button>
+                    @endif
+                </div>
+            </div>
+        @empty
+            <p class="px-4 py-12 text-center text-sm text-slate-400">Nenhuma transação ainda.</p>
         @endforelse
     </div>
 
