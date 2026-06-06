@@ -6,6 +6,7 @@ namespace App\Livewire\Financial;
 
 use App\Actions\Financial\SaveBudget;
 use App\Actions\Financial\SaveBudgetData;
+use App\Actions\Financial\SetBudgetStatus;
 use App\Enums\BudgetStatus;
 use App\Models\Budget;
 use App\Models\Patient;
@@ -125,7 +126,7 @@ class Budgets extends Component
         $this->resetForm();
     }
 
-    public function setBudgetStatus(int $budgetId, string $status): void
+    public function setBudgetStatus(int $budgetId, string $status, SetBudgetStatus $setBudgetStatus): void
     {
         $this->authorize('manage-financial');
 
@@ -133,7 +134,7 @@ class Budgets extends Component
         $target = BudgetStatus::from($status);
 
         if ($budget->status->canTransitionTo($target)) {
-            $budget->update(['status' => $target]);
+            $setBudgetStatus($budget, $target);
         }
     }
 
