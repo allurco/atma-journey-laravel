@@ -26,9 +26,14 @@
         @forelse ($patients as $patient)
             <div class="flex items-center justify-between gap-4 px-4 py-3" wire:key="patient-{{ $patient->id }}">
                 <a href="{{ route('pacientes.show', $patient) }}" wire:navigate class="group flex min-w-0 items-center gap-3">
-                    <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-medium text-teal-700">
-                        {{ $patient->initials() }}
-                    </div>
+                    @if ($patient->photoUrl())
+                        <img src="{{ $patient->photoUrl() }}" alt="{{ $patient->name }}"
+                            class="h-10 w-10 flex-shrink-0 rounded-full object-cover" />
+                    @else
+                        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-medium text-teal-700">
+                            {{ $patient->initials() }}
+                        </div>
+                    @endif
                     <div class="min-w-0">
                         <div class="truncate font-medium text-slate-800 group-hover:text-teal-700">{{ $patient->name }}</div>
                         <div class="truncate text-sm text-slate-500">
@@ -80,6 +85,34 @@
                             <x-ui.input label="Alergias (separadas por vírgula)" wire:model="allergiesText" :error="$errors->first('allergiesText')" placeholder="Dipirona, Penicilina" />
                         </div>
                         <x-ui.input label="Origem" wire:model="leadSource" :error="$errors->first('leadSource')" placeholder="website, indicação…" />
+
+                        <div class="sm:col-span-2">
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Foto</label>
+                            <div class="flex items-center gap-4">
+                                @php($previewUrl = $photo && $photo->isPreviewable() ? $photo->temporaryUrl() : $editingPhotoUrl)
+                                @if ($previewUrl)
+                                    <img src="{{ $previewUrl }}" alt="Foto do paciente"
+                                        class="h-16 w-16 flex-shrink-0 rounded-2xl object-cover" />
+                                @else
+                                    <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                                        </svg>
+                                    </div>
+                                @endif
+                                <div class="flex flex-col gap-2">
+                                    <input type="file" accept="image/*" wire:model="photo"
+                                        class="block w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-teal-700 hover:file:bg-teal-100" />
+                                    @if ($photo || $editingPhotoUrl)
+                                        <button type="button" wire:click="removePhoto" class="self-start text-xs text-rose-600 hover:text-rose-700">Remover foto</button>
+                                    @endif
+                                    <div wire:loading wire:target="photo" class="text-xs text-slate-400">Enviando…</div>
+                                </div>
+                            </div>
+                            @error('photo')
+                                <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">

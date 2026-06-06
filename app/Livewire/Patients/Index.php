@@ -12,17 +12,21 @@ use App\Models\Patient;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 #[Title('Pacientes')]
 #[Layout('components.layouts.tenant')]
 class Index extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     #[Url]
@@ -54,6 +58,8 @@ class Index extends Component
     public string $allergiesText = '';
 
     public string $leadSource = '';
+
+    public ?TemporaryUploadedFile $photo = null;
 
     public function updatedSearch(): void
     {
@@ -105,6 +111,7 @@ class Index extends Component
             'bloodType' => ['nullable', 'string', 'max:5'],
             'allergiesText' => ['nullable', 'string', 'max:500'],
             'leadSource' => ['nullable', 'string', 'max:50'],
+            'photo' => ['nullable', 'image', 'max:2048'],
         ]);
 
         $attributes = [
@@ -121,7 +128,7 @@ class Index extends Component
         ];
 
         if ($this->editingId !== null) {
-            Patient::findOrFail($this->editingId)->update($attributes);
+            $patient = tap(Patient::findOrFail($this->editingId))->update($attributes);
         } else {
             $patient = Patient::create($attributes);
 
@@ -133,8 +140,30 @@ class Index extends Component
             ));
         }
 
+        $this->storePhoto($patient);
+
         $this->showForm = false;
         $this->resetForm();
+    }
+
+    public function removePhoto(): void
+    {
+        $this->authorize('manage-patients');
+
+        if ($this->editingId === null) {
+            $this->reset('photo');
+
+            return;
+        }
+
+        $patient = Patient::findOrFail($this->editingId);
+
+        if ($patient->photo_path !== null) {
+            Storage::disk('local')->delete($patient->photo_path);
+            $patient->update(['photo_path' => null]);
+        }
+
+        $this->reset('photo');
     }
 
     public function cancel(): void
@@ -166,7 +195,29 @@ class Index extends Component
             'patients' => $patients,
             'statuses' => PatientStatus::cases(),
             'canManage' => Gate::allows('manage-patients'),
+            'editingPhotoUrl' => $this->editingId !== null
+                ? Patient::find($this->editingId)?->photoUrl()
+                : null,
         ]);
+    }
+
+    private function storePhoto(Patient $patient): void
+    {
+        if ($this->photo === null) {
+            return;
+        }
+
+        if ($patient->photo_path !== null) {
+            Storage::disk('local')->delete($patient->photo_path);
+        }
+
+        $path = $this->photo->store('patient-photos', 'local');
+
+        if (is_string($path)) {
+            $patient->update(['photo_path' => $path]);
+        }
+
+        $this->reset('photo');
     }
 
     private function uniqueCpfRule(): Closure
@@ -203,7 +254,7 @@ class Index extends Component
     {
         $this->reset([
             'editingId', 'name', 'phone', 'email', 'cpf', 'birthDate',
-            'address', 'bloodType', 'allergiesText', 'leadSource',
+            'address', 'bloodType', 'allergiesText', 'leadSource', 'photo',
         ]);
         $this->status = 'active';
     }

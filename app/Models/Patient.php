@@ -31,7 +31,7 @@ class Patient extends Model
      */
     protected $fillable = [
         'name', 'phone', 'email', 'cpf', 'birth_date', 'address',
-        'status', 'blood_type', 'allergies', 'lead_source',
+        'photo_path', 'status', 'blood_type', 'allergies', 'lead_source',
     ];
 
     protected static function booted(): void
@@ -90,6 +90,14 @@ class Patient extends Model
     public function timelineEvents(): HasMany
     {
         return $this->hasMany(TimelineEvent::class)->latest('occurred_at');
+    }
+
+    /**
+     * URL to the tenant-scoped photo route, or null when no photo is set.
+     */
+    public function photoUrl(): ?string
+    {
+        return $this->photo_path !== null ? route('pacientes.foto', $this) : null;
     }
 
     public function initials(): string

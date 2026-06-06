@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
+use App\Http\Controllers\PatientPhotoController;
 use App\Livewire\Patients\Index as PatientsIndex;
 use App\Livewire\Patients\Show as PatientsShow;
 use Illuminate\Support\Facades\Route;
@@ -34,6 +35,8 @@ Route::middleware([
         Route::view('dashboard', 'dashboard')->name('dashboard');
         Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
         Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');
+        // Patient photo is PII — served only to authenticated tenant users (LGPD).
+        Route::get('pacientes/{patient}/foto', PatientPhotoController::class)->name('pacientes.foto');
     });
 
     // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to

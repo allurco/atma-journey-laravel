@@ -15,9 +15,14 @@
     {{-- Header --}}
     <div class="rounded-2xl border border-slate-200 bg-white p-6">
         <div class="flex items-start gap-4">
-            <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-xl font-semibold text-teal-700">
-                {{ $patient->initials() }}
-            </div>
+            @if ($patient->photoUrl())
+                <img src="{{ $patient->photoUrl() }}" alt="{{ $patient->name }}"
+                    class="h-16 w-16 flex-shrink-0 rounded-2xl object-cover" />
+            @else
+                <div class="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-2xl bg-teal-100 text-xl font-semibold text-teal-700">
+                    {{ $patient->initials() }}
+                </div>
+            @endif
             <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-3">
                     <h1 class="text-2xl font-semibold text-slate-800">{{ $patient->name }}</h1>
