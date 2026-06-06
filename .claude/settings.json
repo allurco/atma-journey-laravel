@@ -2,7 +2,31 @@
   "permissions": {
     "allow": [
       "Bash(gh:*)",
-      "Bash(git push:*)"
+      "Bash(git:*)",
+      "Bash(php:*)",
+      "Bash(DB_DATABASE=*)",
+      "Bash(vendor/bin/pint:*)",
+      "Bash(vendor/bin/phpstan:*)",
+      "Bash(vendor/bin/pest:*)",
+      "Bash(composer:*)",
+      "Bash(npm:*)",
+      "Bash(node:*)",
+      "Bash(mysql:*)",
+      "Bash(cp:*)",
+      "Bash(ln:*)",
+      "Bash(mkdir:*)",
+      "Bash(cd:*)",
+      "Bash(ls:*)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(sed:*)",
+      "Bash(test:*)",
+      "Edit",
+      "Write",
+      "Read",
+      "Grep",
+      "Glob"
     ]
   }
 }
