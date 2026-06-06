@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
 use App\Http\Controllers\PatientPhotoController;
+use App\Livewire\Financial\Budgets;
 use App\Livewire\Patients\Index as PatientsIndex;
 use App\Livewire\Patients\Show as PatientsShow;
 use App\Livewire\Pipeline\Board as PipelineBoard;
@@ -36,6 +37,7 @@ Route::middleware([
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
         Route::get('agenda', WeeklyCalendar::class)->name('agenda');
+        Route::get('financeiro', Budgets::class)->name('financeiro');
         Route::get('pipeline', PipelineBoard::class)->name('pipeline');
         Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
         Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');

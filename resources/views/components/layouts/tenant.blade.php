@@ -8,7 +8,7 @@
         ['label' => 'Prontuário', 'icon' => 'document-text', 'route' => null],
         ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => 'pipeline'],
         ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index'],
-        ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => null],
+        ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => 'financeiro'],
     ];
 @endphp
 

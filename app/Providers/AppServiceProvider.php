@@ -52,6 +52,11 @@ class AppServiceProvider extends ServiceProvider
             $user->role, [UserRole::Admin, UserRole::Staff], true,
         ));
 
+        // Financial (budgets, transactions) is a staff workflow too.
+        Gate::define('manage-financial', fn (User $user): bool => in_array(
+            $user->role, [UserRole::Admin, UserRole::Staff], true,
+        ));
+
         // A missed/cancelled appointment drops the patient's active pipeline card.
         // Registered per-event (not handle/__invoke) so one listener serves both
         // events without auto-discovery double-registering it.
