@@ -14,8 +14,8 @@ PRDs are written **just-in-time** — the detailed spec for a PRD is authored ri
 | 1 | Settings & Identity | MVP | ✅ done | `01-settings-identity.md` |
 | 2 | Patients | MVP | ✅ done | `02-patients.md` |
 | 3 | Pipeline CRM ★ | MVP | ✅ done | `03-pipeline-crm.md` |
-| 4 | Scheduling | MVP | 🚧 in progress | `04-scheduling.md` |
-| 5 | Financial | MVP | ⬜ planned | `05-financial.md` |
+| 4 | Scheduling | MVP | ✅ done | `04-scheduling.md` |
+| 5 | Financial | MVP | 🚧 in progress | `05-financial.md` |
 | 6 | Clinical / EHR | v1.1 | ⬜ planned | `06-clinical-ehr.md` |
 | 7 | Communication | v1.1 | ⬜ planned | `07-communication.md` |
 | 8 | Lead Ingestion | v1.1 | ⬜ planned | `08-lead-ingestion.md` |

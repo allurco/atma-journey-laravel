@@ -21,7 +21,7 @@ use Tests\TestCase;
 // context, since `users` now lives in the tenant database.
 pest()->extend(TenantTestCase::class)
     ->use(RefreshDatabase::class)
-    ->in('Feature/Auth', 'Feature/Settings', 'Feature/Patients', 'Feature/Pipeline', 'Feature/Scheduling');
+    ->in('Feature/Auth', 'Feature/Settings', 'Feature/Patients', 'Feature/Pipeline', 'Feature/Scheduling', 'Feature/Financial');
 
 // Central-context feature tests (tenancy provisioning runs in the central DB).
 // NOTE: paths must not overlap — Pest forbids two base test cases on one path.
