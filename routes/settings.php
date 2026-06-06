@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Settings\Procedures;
 use App\Livewire\Settings\Specialties;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Catalog (admin-only writes via the manage-clinic-settings gate)
     Route::get('settings/especialidades', Specialties::class)->name('especialidades');
+    Route::get('settings/procedimentos', Procedures::class)->name('procedimentos');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
