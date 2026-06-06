@@ -6,7 +6,10 @@ namespace App\Providers;
 
 use App\Events\AppointmentCancelled;
 use App\Events\AppointmentNoShow;
+use App\Events\BudgetApproved;
+use App\Events\PipelineStageChanged;
 use App\Listeners\DropActivePipelineCard;
+use App\Listeners\RecordDomainMetric;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +45,12 @@ class AppServiceProvider extends ServiceProvider
         // events without auto-discovery double-registering it.
         Event::listen(AppointmentCancelled::class, [DropActivePipelineCard::class, 'whenCancelled']);
         Event::listen(AppointmentNoShow::class, [DropActivePipelineCard::class, 'whenNoShow']);
+
+        // Funnel instrumentation: record domain events into the metrics table.
+        Event::listen(PipelineStageChanged::class, [RecordDomainMetric::class, 'whenStageChanged']);
+        Event::listen(BudgetApproved::class, [RecordDomainMetric::class, 'whenBudgetApproved']);
+        Event::listen(AppointmentNoShow::class, [RecordDomainMetric::class, 'whenNoShow']);
+        Event::listen(AppointmentCancelled::class, [RecordDomainMetric::class, 'whenCancelled']);
     }
 
     /**
