@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Pipeline;
 
+use App\Actions\Pipeline\MoveCardToStage;
 use App\Enums\ContactType;
 use App\Enums\PipelineStage;
 use App\Models\Patient;
@@ -109,6 +110,20 @@ class Board extends Component
     {
         $this->showForm = false;
         $this->resetForm();
+    }
+
+    /**
+     * Move a card to a stage — the entry point for both the footer buttons and
+     * (slice 3) drag-and-drop. All the automation lives in {@see MoveCardToStage}.
+     */
+    public function moveCard(int $cardId, string $stage, MoveCardToStage $moveCardToStage): void
+    {
+        $this->authorize('manage-pipeline');
+
+        $moveCardToStage(
+            PipelineCard::findOrFail($cardId),
+            PipelineStage::from($stage),
+        );
     }
 
     public function render(): View
