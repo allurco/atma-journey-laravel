@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Actions\Scheduling;
 
 use App\Enums\AppointmentStatus;
+use App\Events\AppointmentCancelled;
+use App\Events\AppointmentNoShow;
 use App\Models\Appointment;
 use InvalidArgumentException;
 
@@ -29,11 +31,19 @@ class TransitionAppointment
 
         match ($to) {
             AppointmentStatus::Completed => $this->recordVisit($appointment),
-            AppointmentStatus::NoShow => $appointment->patient->increment('missed_appointments'),
+            AppointmentStatus::NoShow => $this->handleNoShow($appointment),
+            AppointmentStatus::Cancelled => AppointmentCancelled::dispatch($appointment),
             default => null,
         };
 
         return $appointment;
+    }
+
+    private function handleNoShow(Appointment $appointment): void
+    {
+        $appointment->patient->increment('missed_appointments');
+
+        AppointmentNoShow::dispatch($appointment);
     }
 
     private function recordVisit(Appointment $appointment): void
