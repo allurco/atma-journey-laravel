@@ -6,7 +6,7 @@
         ['label' => 'Aparência', 'route' => 'appearance.edit'],
         ['label' => 'Especialidades', 'route' => 'especialidades'],
         ['label' => 'Procedimentos', 'route' => 'procedimentos'],
-        ['label' => 'Médicos', 'route' => null],
+        ['label' => 'Médicos', 'route' => 'medicos'],
     ];
 @endphp
 
