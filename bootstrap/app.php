@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\EnsureUserActive;
 use App\Http\Middleware\InitializeTenancyForWeb;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -25,6 +26,9 @@ return Application::configure(basePath: dirname(__DIR__))
             before: StartSession::class,
             prepend: InitializeTenancyForWeb::class,
         );
+
+        // Deactivated users are logged out on their next request (immediate effect).
+        $middleware->web(append: [EnsureUserActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

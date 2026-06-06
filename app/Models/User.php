@@ -16,16 +16,29 @@ use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @property UserRole $role
+ * @property bool $active
  */
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'active'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * In-memory defaults so `role`/`active` are never null before the DB defaults
+     * load (the role-sync hook + the active-user middleware rely on them).
+     *
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'role' => 'staff',
+        'active' => true,
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -38,7 +51,21 @@ class User extends Authenticatable implements PasskeyUser
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
+            'active' => 'boolean',
         ];
+    }
+
+    /**
+     * Keep the spatie role in lock-step with the `role` column (one role per user),
+     * so permission checks (`$user->can(...)`) resolve from the assigned role.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (User $user): void {
+            if ($user->wasRecentlyCreated || $user->wasChanged('role')) {
+                $user->syncRoles([$user->role->value]);
+            }
+        });
     }
 
     /**

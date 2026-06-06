@@ -6,6 +6,7 @@ use App\Livewire\Settings\ClinicProfile;
 use App\Livewire\Settings\Doctors;
 use App\Livewire\Settings\Procedures;
 use App\Livewire\Settings\Specialties;
+use App\Livewire\Settings\Team;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
@@ -19,6 +20,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/especialidades', Specialties::class)->name('especialidades');
     Route::get('settings/procedimentos', Procedures::class)->name('procedimentos');
     Route::get('settings/medicos', Doctors::class)->name('medicos');
+
+    // Team / staff users — admin-only (the manage-users permission).
+    Route::get('settings/equipe', Team::class)->middleware('can:manage-users')->name('equipe');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
