@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Livewire\Settings\ClinicProfile;
 use App\Livewire\Settings\Doctors;
 use App\Livewire\Settings\Procedures;
 use App\Livewire\Settings\Specialties;
@@ -13,7 +14,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 
-    // Catalog (admin-only writes via the manage-clinic-settings gate)
+    // Clinic profile + catalog (admin-only writes via the manage-clinic-settings gate)
+    Route::get('settings/clinica', ClinicProfile::class)->name('clinica');
     Route::get('settings/especialidades', Specialties::class)->name('especialidades');
     Route::get('settings/procedimentos', Procedures::class)->name('procedimentos');
     Route::get('settings/medicos', Doctors::class)->name('medicos');
