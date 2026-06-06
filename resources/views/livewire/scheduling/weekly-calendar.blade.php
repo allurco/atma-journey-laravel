@@ -16,6 +16,9 @@
             <x-ui.button variant="secondary" type="button" wire:click="previousWeek">&larr; Semana anterior</x-ui.button>
             <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
             <x-ui.button variant="secondary" type="button" wire:click="nextWeek">Próxima semana &rarr;</x-ui.button>
+            @if ($canManage)
+                <x-ui.button type="button" wire:click="openBooking">+ Novo agendamento</x-ui.button>
+            @endif
         </div>
     </div>
 
@@ -38,8 +41,13 @@
                     <div class="px-2 py-2 text-right text-xs text-slate-400">{{ $slot }}</div>
                     @foreach ($weekDays as $day)
                         @php($cellKey = $day->format('Y-m-d').'|'.$slot)
-                        <div class="border-l border-slate-100 p-1.5">
-                            @foreach ($appointments->get($cellKey, collect()) as $appointment)
+                        @php($cellAppointments = $appointments->get($cellKey, collect()))
+                        <div @class([
+                            'border-l border-slate-100 p-1.5',
+                            'group cursor-pointer transition-colors hover:bg-teal-50/40' => $canManage && $cellAppointments->isEmpty(),
+                        ])
+                            @if ($canManage && $cellAppointments->isEmpty()) wire:click="openBooking('{{ $day->format('Y-m-d') }}', '{{ $slot }}')" @endif>
+                            @foreach ($cellAppointments as $appointment)
                                 <div wire:key="appt-{{ $appointment->id }}"
                                     class="mb-1 rounded-lg border p-2 text-xs last:mb-0 {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
                                     <div class="truncate font-medium">{{ $appointment->patient->name }}</div>
@@ -51,10 +59,72 @@
                                     </div>
                                 </div>
                             @endforeach
+                            @if ($canManage && $cellAppointments->isEmpty())
+                                <span class="hidden h-full w-full items-center justify-center text-lg text-slate-300 group-hover:flex">+</span>
+                            @endif
                         </div>
                     @endforeach
                 </div>
             @endforeach
         </div>
     </div>
+
+    {{-- Booking modal --}}
+    @if ($showBooking)
+        @php($selectClasses = 'w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500 text-slate-800 transition-all')
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" wire:key="booking-form">
+            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+                <h2 class="text-lg font-semibold text-slate-800">Novo agendamento</h2>
+
+                <form wire:submit="book" class="mt-4 space-y-4">
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Paciente</label>
+                        <select wire:model="bookPatientId" class="{{ $selectClasses }}">
+                            <option value="">Selecione um paciente</option>
+                            @foreach ($patients as $patientOption)
+                                <option value="{{ $patientOption->id }}">{{ $patientOption->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('bookPatientId')
+                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Profissional</label>
+                            <select wire:model="bookDoctorId" class="{{ $selectClasses }}">
+                                <option value="">— Opcional —</option>
+                                @foreach ($doctors as $doctorOption)
+                                    <option value="{{ $doctorOption->id }}">{{ $doctorOption->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Procedimento</label>
+                            <select wire:model.live="bookProcedureId" class="{{ $selectClasses }}">
+                                <option value="">— Opcional —</option>
+                                @foreach ($procedures as $procedureOption)
+                                    <option value="{{ $procedureOption->id }}">{{ $procedureOption->name }} ({{ $procedureOption->duration ?: 60 }}min)</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <x-ui.input label="Tipo de atendimento" wire:model="bookServiceType" placeholder="Consulta, Retorno, Exame…" />
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <x-ui.date-picker label="Data" wire:model="bookDate" :error="$errors->first('bookDate')" />
+                        <x-ui.time-select label="Início" wire:model.live="bookStartTime" :error="$errors->first('bookStartTime')" />
+                        <x-ui.time-select label="Fim" wire:model="bookEndTime" :error="$errors->first('bookEndTime')" />
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <x-ui.button variant="secondary" type="button" wire:click="cancelBooking">Cancelar</x-ui.button>
+                        <x-ui.button type="submit">Agendar</x-ui.button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 </div>

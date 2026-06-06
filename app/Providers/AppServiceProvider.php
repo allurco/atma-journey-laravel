@@ -42,6 +42,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-pipeline', fn (User $user): bool => in_array(
             $user->role, [UserRole::Admin, UserRole::Staff], true,
         ));
+
+        // Scheduling (booking, lifecycle) is a staff workflow too.
+        Gate::define('manage-scheduling', fn (User $user): bool => in_array(
+            $user->role, [UserRole::Admin, UserRole::Staff], true,
+        ));
     }
 
     /**
