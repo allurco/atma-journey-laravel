@@ -50,14 +50,12 @@ class TransitionAppointment
     {
         $patient = $appointment->patient;
 
-        // Direct assignment (not mass-assignment) — these rollups are not fillable.
-        $patient->total_appointments = $patient->total_appointments + 1;
-        $patient->last_visit_date = $appointment->date;
+        // Atomic counter increment; the visit dates are set in the same statement.
+        $patient->forceFill([
+            'last_visit_date' => $appointment->date,
+            'first_visit_date' => $patient->first_visit_date ?? $appointment->date,
+        ])->save();
 
-        if ($patient->first_visit_date === null) {
-            $patient->first_visit_date = $appointment->date;
-        }
-
-        $patient->save();
+        $patient->increment('total_appointments');
     }
 }

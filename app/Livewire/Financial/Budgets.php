@@ -16,6 +16,7 @@ use App\Models\Budget;
 use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\Transaction;
+use App\Support\Money;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -191,9 +192,10 @@ class Budgets extends Component
 
     public function render(): View
     {
-        $formTotal = collect($this->items)->sum(
-            fn (array $item): float => (float) $item['unit_price'] * (int) $item['quantity'] - (float) $item['discount'],
-        );
+        $formTotal = Money::sum(array_map(
+            fn (array $item): string => Money::lineTotal($item['unit_price'] ?: 0, (int) ($item['quantity'] ?: 0), $item['discount'] ?: 0),
+            $this->items,
+        ));
 
         $transactions = Transaction::with('patient')->latest()->get();
 
@@ -201,15 +203,15 @@ class Budgets extends Component
             'budgets' => Budget::with('patient')->latest()->get(),
             'transactions' => $transactions,
             'revenue' => [
-                'total' => (float) $transactions->sum(fn (Transaction $t): float => (float) $t->total),
-                'paid' => (float) $transactions->where('status', PaymentStatus::Paid)->sum(fn (Transaction $t): float => (float) $t->total),
-                'pending' => (float) $transactions->where('status', PaymentStatus::Pending)->sum(fn (Transaction $t): float => (float) $t->total),
+                'total' => Money::sum($transactions->pluck('total')),
+                'paid' => Money::sum($transactions->where('status', PaymentStatus::Paid)->pluck('total')),
+                'pending' => Money::sum($transactions->where('status', PaymentStatus::Pending)->pluck('total')),
             ],
             'patients' => Patient::orderBy('name')->get(['id', 'name']),
             'procedures' => Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'base_price']),
             'statuses' => BudgetStatus::cases(),
             'paymentMethods' => PaymentMethod::cases(),
-            'formTotal' => (float) $formTotal,
+            'formTotal' => $formTotal,
             'canManage' => Gate::allows('manage-financial'),
         ]);
     }

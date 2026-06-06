@@ -18,7 +18,7 @@
         @foreach ($revenueCards as $card)
             <div class="rounded-2xl border border-slate-200 bg-white p-4">
                 <p class="text-xs uppercase tracking-wider text-slate-400">{{ $card['label'] }}</p>
-                <p class="mt-1 text-lg font-semibold {{ $card['class'] }}">R$ {{ number_format($card['value'], 2, ',', '.') }}</p>
+                <p class="mt-1 text-lg font-semibold {{ $card['class'] }}">R$ {{ number_format((float) $card['value'], 2, ',', '.') }}</p>
             </div>
         @endforeach
     </div>
@@ -158,7 +158,7 @@
 
                     <div class="flex items-center justify-between border-t border-slate-100 pt-3">
                         <span class="text-sm text-slate-500">Total</span>
-                        <span class="text-lg font-semibold text-emerald-600">R$ {{ number_format($formTotal, 2, ',', '.') }}</span>
+                        <span class="text-lg font-semibold text-emerald-600">R$ {{ number_format((float) $formTotal, 2, ',', '.') }}</span>
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">
