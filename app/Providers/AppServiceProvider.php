@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Enums\UserRole;
+use App\Events\AppointmentCancelled;
+use App\Events\AppointmentNoShow;
+use App\Listeners\DropActivePipelineCard;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -47,6 +51,12 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-scheduling', fn (User $user): bool => in_array(
             $user->role, [UserRole::Admin, UserRole::Staff], true,
         ));
+
+        // A missed/cancelled appointment drops the patient's active pipeline card.
+        // Registered per-event (not handle/__invoke) so one listener serves both
+        // events without auto-discovery double-registering it.
+        Event::listen(AppointmentCancelled::class, [DropActivePipelineCard::class, 'whenCancelled']);
+        Event::listen(AppointmentNoShow::class, [DropActivePipelineCard::class, 'whenNoShow']);
     }
 
     /**
