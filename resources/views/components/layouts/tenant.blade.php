@@ -70,11 +70,18 @@
                 </nav>
 
                 <div class="p-3 border-t border-slate-700/50 space-y-1">
-                    <span class="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-slate-600 cursor-not-allowed">
+                    @php($settingsActive = request()->routeIs('profile.edit', 'security.edit', 'appearance.edit'))
+                    <a href="{{ route('configuracoes') }}" wire:navigate @class([
+                        'w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200',
+                        'bg-teal-500/15 text-teal-400' => $settingsActive,
+                        'text-slate-400 hover:text-slate-200 hover:bg-slate-800' => ! $settingsActive,
+                    ])>
                         <flux:icon icon="cog-6-tooth" class="w-[18px] h-[18px]" />
                         <span class="text-sm">Configurações</span>
-                        <span class="ml-auto text-[10px] uppercase tracking-wider text-slate-600">em breve</span>
-                    </span>
+                        @if ($settingsActive)
+                            <span class="ml-auto w-1.5 h-1.5 rounded-full bg-teal-400"></span>
+                        @endif
+                    </a>
 
                     <div class="flex items-center gap-3 px-4 pt-3 mt-1 border-t border-slate-700/50">
                         <div class="w-9 h-9 rounded-lg bg-teal-500/15 text-teal-300 flex items-center justify-center text-xs font-semibold flex-shrink-0">
