@@ -9,6 +9,7 @@ use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -79,6 +80,16 @@ class Patient extends Model
     public function maskedCpf(): ?string
     {
         return $this->cpf_last4 !== null ? '•••.•••.•••-'.$this->cpf_last4 : null;
+    }
+
+    /**
+     * The append-only activity log for this patient, newest first.
+     *
+     * @return HasMany<TimelineEvent, $this>
+     */
+    public function timelineEvents(): HasMany
+    {
+        return $this->hasMany(TimelineEvent::class)->latest('occurred_at');
     }
 
     public function initials(): string
