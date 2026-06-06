@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Http\Middleware\InitializeTenancyForLivewire;
+use App\Http\Middleware\InitializeTenancyForWeb;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -16,12 +16,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Livewire's update / upload / preview routes run InitializeTenancyForLivewire.
-        // It must execute before StartSession + Authenticate so the session's user
-        // lookup resolves against the tenant database instead of the central one.
+        // Tenancy is a platform invariant. Initialize it on EVERY web request, before
+        // StartSession + Authenticate resolve the user, so our routes, Fortify, and any
+        // route a package/framework registers globally (Livewire update/upload/preview,
+        // broadcasting/auth, …) are tenant-correct by default — no per-route patching.
+        $middleware->web(prepend: [InitializeTenancyForWeb::class]);
         $middleware->prependToPriorityList(
             before: StartSession::class,
-            prepend: InitializeTenancyForLivewire::class,
+            prepend: InitializeTenancyForWeb::class,
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {

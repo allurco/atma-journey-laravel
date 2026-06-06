@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
 use Illuminate\Support\Facades\Route;
-use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 /*
@@ -23,9 +22,10 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 |
 */
 
+// Tenancy is initialized for the whole `web` group (see bootstrap/app.php +
+// InitializeTenancyForWeb), so these routes only need to refuse central-domain access.
 Route::middleware([
     'web',
-    InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
