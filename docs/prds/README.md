@@ -11,7 +11,7 @@ PRDs are written **just-in-time** — the detailed spec for a PRD is authored ri
 | # | PRD | Phase | Status | Spec |
 |---|---|---|---|---|
 | 0 | Platform Foundation | MVP | ✅ done | `00-platform-foundation.md` |
-| 1 | Settings & Identity | MVP | ⬜ planned | `01-settings-identity.md` |
+| 1 | Settings & Identity | MVP | 📋 spec ready | `01-settings-identity.md` |
 | 2 | Patients | MVP | ⬜ planned | `02-patients.md` |
 | 3 | Pipeline CRM ★ | MVP | ⬜ planned | `03-pipeline-crm.md` |
 | 4 | Scheduling | MVP | ⬜ planned | `04-scheduling.md` |
