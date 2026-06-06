@@ -48,8 +48,8 @@
                         ])
                             @if ($canManage && $cellAppointments->isEmpty()) wire:click="openBooking('{{ $day->format('Y-m-d') }}', '{{ $slot }}')" @endif>
                             @foreach ($cellAppointments as $appointment)
-                                <div wire:key="appt-{{ $appointment->id }}"
-                                    class="mb-1 rounded-lg border p-2 text-xs last:mb-0 {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
+                                <button type="button" wire:key="appt-{{ $appointment->id }}" wire:click="openDetail({{ $appointment->id }})"
+                                    class="mb-1 block w-full cursor-pointer rounded-lg border p-2 text-left text-xs transition-shadow last:mb-0 hover:shadow-md {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
                                     <div class="truncate font-medium">{{ $appointment->patient->name }}</div>
                                     <div class="mt-0.5 flex items-center justify-between gap-1">
                                         <span class="truncate opacity-80">{{ $appointment->service_type }}</span>
@@ -57,7 +57,7 @@
                                             {{ $appointment->status->label() }}
                                         </span>
                                     </div>
-                                </div>
+                                </button>
                             @endforeach
                             @if ($canManage && $cellAppointments->isEmpty())
                                 <span class="hidden h-full w-full items-center justify-center text-lg text-slate-300 group-hover:flex">+</span>
@@ -124,6 +124,53 @@
                         <x-ui.button type="submit">Agendar</x-ui.button>
                     </div>
                 </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- Detail flyout --}}
+    @if ($detailAppointment)
+        <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/40" wire:key="detail-{{ $detailAppointment->id }}" wire:click.self="closeDetail">
+            <div class="h-full w-full max-w-sm overflow-y-auto bg-white p-6 shadow-xl">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-800">{{ $detailAppointment->patient->name }}</h2>
+                        <p class="text-sm text-slate-500">{{ $detailAppointment->service_type ?? 'Atendimento' }}</p>
+                    </div>
+                    <button type="button" wire:click="closeDetail" class="text-slate-400 hover:text-slate-600">&times;</button>
+                </div>
+
+                <div class="mt-4">
+                    <x-ui.badge :color="$detailAppointment->status->badgeClasses()">{{ $detailAppointment->status->label() }}</x-ui.badge>
+                </div>
+
+                <dl class="mt-5 space-y-3 text-sm">
+                    <div class="flex justify-between"><dt class="text-slate-400">Data</dt><dd class="text-slate-700">{{ $detailAppointment->date->format('d/m/Y') }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-slate-400">Horário</dt><dd class="text-slate-700">{{ $detailAppointment->start_time }} – {{ $detailAppointment->end_time }}</dd></div>
+                    @if ($detailAppointment->doctor)
+                        <div class="flex justify-between"><dt class="text-slate-400">Profissional</dt><dd class="text-slate-700">{{ $detailAppointment->doctor->name }}</dd></div>
+                    @endif
+                </dl>
+
+                @if ($canManage && ! $detailAppointment->status->isTerminal())
+                    <div class="mt-6 flex flex-wrap gap-2 border-t border-slate-100 pt-4">
+                        @if ($detailAppointment->status->canTransitionTo(\App\Enums\AppointmentStatus::CheckedIn))
+                            <x-ui.button type="button" wire:click="transitionAppointment({{ $detailAppointment->id }}, 'checked-in')">Check-in</x-ui.button>
+                        @endif
+                        @if ($detailAppointment->status->canTransitionTo(\App\Enums\AppointmentStatus::Completed))
+                            <x-ui.button type="button" wire:click="transitionAppointment({{ $detailAppointment->id }}, 'completed')">Concluir</x-ui.button>
+                        @endif
+                        @if ($detailAppointment->status->canTransitionTo(\App\Enums\AppointmentStatus::NoShow))
+                            <x-ui.button variant="secondary" type="button" wire:click="transitionAppointment({{ $detailAppointment->id }}, 'no-show')">Não compareceu</x-ui.button>
+                        @endif
+                        @if ($detailAppointment->status->canTransitionTo(\App\Enums\AppointmentStatus::Cancelled))
+                            <x-ui.button variant="danger" type="button" wire:click="transitionAppointment({{ $detailAppointment->id }}, 'cancelled')">Cancelar</x-ui.button>
+                        @endif
+                    </div>
+                @endif
+
+                <a href="{{ route('pacientes.show', $detailAppointment->patient) }}" wire:navigate
+                    class="mt-6 inline-flex text-sm text-teal-700 hover:text-teal-800">Ver paciente &rarr;</a>
             </div>
         </div>
     @endif

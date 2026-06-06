@@ -17,6 +17,30 @@ enum AppointmentStatus: string
     case Cancelled = 'cancelled';
     case NoShow = 'no-show';
 
+    /**
+     * The states this status may move to — the guarded lifecycle in one place.
+     *
+     * @return list<self>
+     */
+    public function allowedTransitions(): array
+    {
+        return match ($this) {
+            self::Scheduled => [self::CheckedIn, self::Cancelled, self::NoShow],
+            self::CheckedIn => [self::Completed, self::Cancelled],
+            self::Completed, self::Cancelled, self::NoShow => [],
+        };
+    }
+
+    public function canTransitionTo(self $status): bool
+    {
+        return in_array($status, $this->allowedTransitions(), true);
+    }
+
+    public function isTerminal(): bool
+    {
+        return $this->allowedTransitions() === [];
+    }
+
     public function label(): string
     {
         return match ($this) {

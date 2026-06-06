@@ -6,6 +6,8 @@ namespace App\Livewire\Scheduling;
 
 use App\Actions\Scheduling\ScheduleAppointment;
 use App\Actions\Scheduling\ScheduleAppointmentData;
+use App\Actions\Scheduling\TransitionAppointment;
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -31,6 +33,8 @@ class WeeklyCalendar extends Component
     /** When the agenda is opened from a patient detail, pre-open booking for them. */
     #[Url(as: 'novo')]
     public ?int $agendarPatientId = null;
+
+    public ?int $detailAppointmentId = null;
 
     public bool $showBooking = false;
 
@@ -73,6 +77,28 @@ class WeeklyCalendar extends Component
     public function today(): void
     {
         $this->weekStart = Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+    }
+
+    public function openDetail(int $appointmentId): void
+    {
+        $this->detailAppointmentId = $appointmentId;
+    }
+
+    public function closeDetail(): void
+    {
+        $this->detailAppointmentId = null;
+    }
+
+    public function transitionAppointment(int $appointmentId, string $status, TransitionAppointment $transitionAppointment): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $transitionAppointment(
+            Appointment::findOrFail($appointmentId),
+            AppointmentStatus::from($status),
+        );
+
+        $this->detailAppointmentId = null;
     }
 
     public function openBooking(?string $date = null, ?string $time = null): void
@@ -163,6 +189,9 @@ class WeeklyCalendar extends Component
             'doctors' => Doctor::where('active', true)->orderBy('name')->get(['id', 'name']),
             'procedures' => Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']),
             'canManage' => Gate::allows('manage-scheduling'),
+            'detailAppointment' => $this->detailAppointmentId !== null
+                ? Appointment::with(['patient', 'doctor'])->find($this->detailAppointmentId)
+                : null,
         ]);
     }
 
