@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Laravel\Fortify\Features;
-use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 return [
@@ -107,7 +106,8 @@ return [
 
     'middleware' => [
         'web',
-        InitializeTenancyByDomain::class,
+        // Tenancy is initialized for the whole `web` group (InitializeTenancyForWeb);
+        // Fortify only needs to refuse clinic auth on the central domains.
         PreventAccessFromCentralDomains::class,
     ],
 
