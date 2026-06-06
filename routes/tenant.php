@@ -6,6 +6,7 @@ use App\Http\Controllers\ClinicLogoController;
 use App\Http\Controllers\PatientPhotoController;
 use App\Livewire\Patients\Index as PatientsIndex;
 use App\Livewire\Patients\Show as PatientsShow;
+use App\Livewire\Pipeline\Board as PipelineBoard;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -33,6 +34,7 @@ Route::middleware([
 ])->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
+        Route::get('pipeline', PipelineBoard::class)->name('pipeline');
         Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
         Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');
         // Patient photo is PII — served only to authenticated tenant users (LGPD).

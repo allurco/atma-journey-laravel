@@ -37,6 +37,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-patients', fn (User $user): bool => in_array(
             $user->role, [UserRole::Admin, UserRole::Staff], true,
         ));
+
+        // The retention pipeline is a staff workflow, like patients.
+        Gate::define('manage-pipeline', fn (User $user): bool => in_array(
+            $user->role, [UserRole::Admin, UserRole::Staff], true,
+        ));
     }
 
     /**
