@@ -7,7 +7,7 @@
         ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => null],
         ['label' => 'Prontuário', 'icon' => 'document-text', 'route' => null],
         ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => null],
-        ['label' => 'Pacientes', 'icon' => 'users', 'route' => null],
+        ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index'],
         ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => null],
     ];
 @endphp
