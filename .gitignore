@@ -27,3 +27,6 @@ yarn-error.log
 
 # Playwright MCP screenshots
 /.playwright-mcp
+
+# Runtime/test tenant storage (stancl suffixes storage per tenant)
+/storage/tenant*
