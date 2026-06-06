@@ -63,6 +63,42 @@
                                         </div>
                                     @endif
                                 </div>
+
+                                @if ($canManage)
+                                    <div class="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
+                                        @if ($stage === \App\Enums\PipelineStage::Desistentes)
+                                            <button wire:click="moveCard({{ $card->id }}, '{{ \App\Enums\PipelineStage::PrimeiroContato->value }}')"
+                                                class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-teal-600 transition-all hover:bg-teal-50">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                                                Reativar
+                                            </button>
+                                        @else
+                                            @if ($stage->previous())
+                                                <button wire:click="moveCard({{ $card->id }}, '{{ $stage->previous()->value }}')"
+                                                    class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 transition-all hover:bg-teal-50 hover:text-teal-600">
+                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" /></svg>
+                                                    Voltar
+                                                </button>
+                                            @else
+                                                <span></span>
+                                            @endif
+                                            <div class="flex items-center gap-1">
+                                                <button wire:click="moveCard({{ $card->id }}, '{{ \App\Enums\PipelineStage::Desistentes->value }}')"
+                                                    title="Mover para Desistentes"
+                                                    class="rounded-md px-2 py-1 text-xs text-rose-400 transition-all hover:bg-rose-50 hover:text-rose-600">
+                                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
+                                                </button>
+                                                @if ($stage->next())
+                                                    <button wire:click="moveCard({{ $card->id }}, '{{ $stage->next()->value }}')"
+                                                        class="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-slate-500 transition-all hover:bg-teal-50 hover:text-teal-600">
+                                                        Avançar
+                                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" /></svg>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endif
                             </div>
                         @empty
                             <p class="py-6 text-center text-xs text-slate-400">Nenhum card</p>

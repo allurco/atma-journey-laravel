@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Listeners\SyncPatientStatus;
+
 /**
  * Stages of the patient retention funnel (the Kanban columns). Values match the
  * TS app. `Desistentes` is a special "drop" column, not part of the linear flow.
@@ -35,6 +37,41 @@ enum PipelineStage: string
             self::Concluido => 'Concluído',
             self::Desistentes => 'Desistentes',
         };
+    }
+
+    /**
+     * The patient status this stage implies — the single source of the
+     * stage→status map {@see SyncPatientStatus} applies.
+     */
+    public function patientStatus(): PatientStatus
+    {
+        return match ($this) {
+            self::OrcamentoAceito, self::Agendado, self::Retorno, self::Concluido => PatientStatus::Ativo,
+            self::Desistentes => PatientStatus::Inativo,
+            default => PatientStatus::Lead,
+        };
+    }
+
+    /**
+     * The next stage in the linear funnel, or null at the end / off-flow.
+     */
+    public function next(): ?self
+    {
+        $flow = self::linearFlow();
+        $index = array_search($this, $flow, true);
+
+        return $index === false ? null : ($flow[$index + 1] ?? null);
+    }
+
+    /**
+     * The previous stage in the linear funnel, or null at the start / off-flow.
+     */
+    public function previous(): ?self
+    {
+        $flow = self::linearFlow();
+        $index = array_search($this, $flow, true);
+
+        return $index === false || $index === 0 ? null : $flow[$index - 1];
     }
 
     /**
