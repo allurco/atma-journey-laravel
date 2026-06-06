@@ -13,7 +13,7 @@ class Clinic extends Model
     /** @use HasFactory<ClinicFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'cnpj', 'email', 'phone', 'address'];
+    protected $fillable = ['name', 'logo_path', 'cnpj', 'email', 'phone', 'address'];
 
     /**
      * The clinic is a per-tenant singleton. Return it, seeding one from the
@@ -22,5 +22,13 @@ class Clinic extends Model
     public static function current(): self
     {
         return static::query()->firstOrCreate([], ['name' => (string) tenant('name')]);
+    }
+
+    /**
+     * URL to the tenant-scoped logo route, or null when no logo is set.
+     */
+    public function logoUrl(): ?string
+    {
+        return $this->logo_path !== null ? route('clinica.logo') : null;
     }
 }

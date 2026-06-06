@@ -9,6 +9,33 @@
         @endif
 
         <div>
+            <label class="mb-2 block text-sm font-medium text-slate-700">Logo</label>
+            <div class="flex items-center gap-4">
+                <div class="flex h-20 w-20 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+                    @if ($logo)
+                        <img src="{{ $logo->temporaryUrl() }}" alt="Prévia do logo" class="h-full w-full object-contain" />
+                    @elseif ($logoUrl)
+                        <img src="{{ $logoUrl }}" alt="Logo da clínica" class="h-full w-full object-contain" />
+                    @else
+                        <x-atma-logo class="h-8 w-8 opacity-40" />
+                    @endif
+                </div>
+                @if ($canManage)
+                    <div class="space-y-1.5">
+                        <input type="file" wire:model="logo" accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                            class="block text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-teal-700 hover:file:bg-teal-100" />
+                        <p class="text-xs text-slate-400">PNG, JPG, SVG ou WEBP — até 2&nbsp;MB.</p>
+                        <div wire:loading wire:target="logo" class="text-xs text-slate-400">Enviando…</div>
+                        @error('logo') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror
+                        @if ($logoUrl)
+                            <button type="button" wire:click="removeLogo" class="text-xs text-rose-600 hover:text-rose-700">Remover logo</button>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        <div>
             <label for="name" class="mb-2 block text-sm font-medium text-slate-700">Nome da clínica</label>
             <input id="name" type="text" wire:model="name" @disabled(! $canManage) class="{{ $inputClasses }}" />
             @error('name') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
