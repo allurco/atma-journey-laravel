@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ClinicLogoController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -30,6 +31,10 @@ Route::middleware([
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
     });
+
+    // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to
+    // serve the image; another clinic can never reach this one's file).
+    Route::get('clinica/logo', ClinicLogoController::class)->name('clinica.logo');
 
     // Authenticated clinic settings (profile, security, appearance).
     require __DIR__.'/settings.php';
