@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth'])->group(function () {
     Route::redirect('settings', 'settings/profile');
+    Route::redirect('configuracoes', 'settings/profile')->name('configuracoes');
 
     Route::livewire('settings/profile', 'pages::settings.profile')->name('profile.edit');
 });
