@@ -103,16 +103,8 @@
                 <h2 class="text-lg font-semibold text-slate-800">{{ $editingId ? 'Editar orçamento' : 'Novo orçamento' }}</h2>
 
                 <form wire:submit="save" class="mt-4 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Paciente</label>
-                        <select wire:model="patientId" class="{{ $selectClasses }}" @disabled($editingId)>
-                            <option value="">Selecione um paciente</option>
-                            @foreach ($patients as $patientOption)
-                                <option value="{{ $patientOption->id }}">{{ $patientOption->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('patientId')<p class="mt-1 text-sm text-rose-600">{{ $message }}</p>@enderror
-                    </div>
+                    <x-ui.combobox label="Paciente" wire:model="patientId" :options="$patients"
+                        placeholder="Selecione um paciente" :error="$errors->first('patientId')" />
 
                     {{-- Line items --}}
                     <div>
@@ -126,13 +118,8 @@
                             @foreach ($items as $index => $item)
                                 <div class="grid grid-cols-12 items-end gap-2 rounded-xl border border-slate-200 p-2" wire:key="item-{{ $index }}">
                                     <div class="col-span-12 sm:col-span-4">
-                                        <label class="mb-1 block text-xs text-slate-400">Procedimento</label>
-                                        <select wire:model.live="items.{{ $index }}.procedure_id" class="{{ $selectClasses }} !py-2 text-sm">
-                                            <option value="">Avulso</option>
-                                            @foreach ($procedures as $procedureOption)
-                                                <option value="{{ $procedureOption->id }}">{{ $procedureOption->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <x-ui.combobox label="Procedimento" wire:model.live="items.{{ $index }}.procedure_id"
+                                            :options="$procedures" placeholder="Avulso" nullable />
                                     </div>
                                     <div class="col-span-12 sm:col-span-3">
                                         <x-ui.input label="Descrição" wire:model="items.{{ $index }}.name" :error="$errors->first('items.'.$index.'.name')" class="!py-2 text-sm" />

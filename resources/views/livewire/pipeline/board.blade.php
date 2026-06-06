@@ -118,18 +118,8 @@
                 <h2 class="text-lg font-semibold text-slate-800">{{ $editingId ? 'Editar card' : 'Adicionar ao pipeline' }}</h2>
 
                 <form wire:submit="save" class="mt-4 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Paciente</label>
-                        <select wire:model="patientId" class="{{ $selectClasses }}" @disabled($editingId)>
-                            <option value="">Selecione um paciente</option>
-                            @foreach ($patients as $patientOption)
-                                <option value="{{ $patientOption->id }}">{{ $patientOption->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('patientId')
-                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    <x-ui.combobox label="Paciente" wire:model="patientId" :options="$patients"
+                        placeholder="Selecione um paciente" :error="$errors->first('patientId')" />
 
                     <x-ui.input label="Tratamento" wire:model="treatment" :error="$errors->first('treatment')" placeholder="Ex.: Implante unitário" />
 

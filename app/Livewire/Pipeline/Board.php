@@ -148,7 +148,9 @@ class Board extends Component
         return view('livewire.pipeline.board', [
             'columns' => $columns,
             'totalPipelineValue' => (float) $cards->sum($sumValue),
-            'patients' => Patient::orderBy('name')->get(['id', 'name']),
+            'patients' => $this->showForm
+                ? Patient::orderBy('name')->get(['id', 'name'])
+                : collect(),
             'stages' => PipelineStage::cases(),
             'contactTypes' => ContactType::cases(),
             'canManage' => Gate::allows('manage-pipeline'),
