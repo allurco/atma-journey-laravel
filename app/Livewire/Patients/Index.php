@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Patients;
 
+use App\Actions\Patients\AppendTimelineEvent;
+use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\PatientStatus;
+use App\Enums\TimelineEventType;
 use App\Models\Patient;
 use Closure;
 use Illuminate\Contracts\View\View;
@@ -120,7 +123,14 @@ class Index extends Component
         if ($this->editingId !== null) {
             Patient::findOrFail($this->editingId)->update($attributes);
         } else {
-            Patient::create($attributes);
+            $patient = Patient::create($attributes);
+
+            app(AppendTimelineEvent::class)(new AppendTimelineEventData(
+                patientId: $patient->id,
+                type: TimelineEventType::Nota,
+                title: 'Paciente cadastrado',
+                description: 'O paciente foi adicionado à base da clínica.',
+            ));
         }
 
         $this->showForm = false;
