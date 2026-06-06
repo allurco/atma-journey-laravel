@@ -185,9 +185,9 @@ class WeeklyCalendar extends Component
             'timeSlots' => $this->timeSlots(),
             'appointments' => $appointments,
             'weekLabel' => $monday->format('d/m').' – '.$friday->format('d/m/Y'),
-            'patients' => Patient::orderBy('name')->get(['id', 'name']),
-            'doctors' => Doctor::where('active', true)->orderBy('name')->get(['id', 'name']),
-            'procedures' => Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']),
+            'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
+            'doctors' => $this->showBooking ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
+            'procedures' => $this->showBooking ? Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']) : collect(),
             'canManage' => Gate::allows('manage-scheduling'),
             'detailAppointment' => $this->detailAppointmentId !== null
                 ? Appointment::with(['patient', 'doctor'])->find($this->detailAppointmentId)

@@ -77,38 +77,13 @@
                 <h2 class="text-lg font-semibold text-slate-800">Novo agendamento</h2>
 
                 <form wire:submit="book" class="mt-4 space-y-4">
-                    <div>
-                        <label class="mb-2 block text-sm font-medium text-slate-700">Paciente</label>
-                        <select wire:model="bookPatientId" class="{{ $selectClasses }}">
-                            <option value="">Selecione um paciente</option>
-                            @foreach ($patients as $patientOption)
-                                <option value="{{ $patientOption->id }}">{{ $patientOption->name }}</option>
-                            @endforeach
-                        </select>
-                        @error('bookPatientId')
-                            <p class="mt-1 text-sm text-rose-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    <x-ui.combobox label="Paciente" wire:model="bookPatientId" :options="$patients"
+                        placeholder="Selecione um paciente" :error="$errors->first('bookPatientId')" />
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700">Profissional</label>
-                            <select wire:model="bookDoctorId" class="{{ $selectClasses }}">
-                                <option value="">— Opcional —</option>
-                                @foreach ($doctors as $doctorOption)
-                                    <option value="{{ $doctorOption->id }}">{{ $doctorOption->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div>
-                            <label class="mb-2 block text-sm font-medium text-slate-700">Procedimento</label>
-                            <select wire:model.live="bookProcedureId" class="{{ $selectClasses }}">
-                                <option value="">— Opcional —</option>
-                                @foreach ($procedures as $procedureOption)
-                                    <option value="{{ $procedureOption->id }}">{{ $procedureOption->name }} ({{ $procedureOption->duration ?: 60 }}min)</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        <x-ui.combobox label="Profissional" wire:model="bookDoctorId" :options="$doctors" placeholder="— Opcional —" nullable />
+                        <x-ui.combobox label="Procedimento" wire:model.live="bookProcedureId" placeholder="— Opcional —" nullable
+                            :options="$procedures->map(fn ($procedure) => ['value' => $procedure->id, 'label' => $procedure->name.' ('.($procedure->duration ?: 60).'min)'])" />
                     </div>
 
                     <x-ui.input label="Tipo de atendimento" wire:model="bookServiceType" placeholder="Consulta, Retorno, Exame…" />
