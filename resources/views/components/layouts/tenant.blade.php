@@ -4,7 +4,7 @@
     $clinicName = tenant('name') ?? config('app.name');
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard'],
-        ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => null],
+        ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => 'agenda'],
         ['label' => 'Prontuário', 'icon' => 'document-text', 'route' => null],
         ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => 'pipeline'],
         ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index'],
