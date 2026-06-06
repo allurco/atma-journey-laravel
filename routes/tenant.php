@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
 use App\Livewire\Patients\Index as PatientsIndex;
+use App\Livewire\Patients\Show as PatientsShow;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -32,6 +33,7 @@ Route::middleware([
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::view('dashboard', 'dashboard')->name('dashboard');
         Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
+        Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');
     });
 
     // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to

@@ -25,17 +25,17 @@
     <div class="rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white">
         @forelse ($patients as $patient)
             <div class="flex items-center justify-between gap-4 px-4 py-3" wire:key="patient-{{ $patient->id }}">
-                <div class="flex min-w-0 items-center gap-3">
+                <a href="{{ route('pacientes.show', $patient) }}" wire:navigate class="group flex min-w-0 items-center gap-3">
                     <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-teal-100 text-sm font-medium text-teal-700">
                         {{ $patient->initials() }}
                     </div>
                     <div class="min-w-0">
-                        <div class="truncate font-medium text-slate-800">{{ $patient->name }}</div>
+                        <div class="truncate font-medium text-slate-800 group-hover:text-teal-700">{{ $patient->name }}</div>
                         <div class="truncate text-sm text-slate-500">
                             {{ $patient->phone }}@if ($patient->maskedCpf()) · {{ $patient->maskedCpf() }}@endif
                         </div>
                     </div>
-                </div>
+                </a>
                 <div class="flex flex-shrink-0 items-center gap-4">
                     <x-ui.badge :color="$patient->status->badgeClasses()">{{ $patient->status->label() }}</x-ui.badge>
                     @if ($canManage)
