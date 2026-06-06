@@ -4,16 +4,13 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Enums\UserRole;
 use App\Events\AppointmentCancelled;
 use App\Events\AppointmentNoShow;
 use App\Listeners\DropActivePipelineCard;
-use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -34,28 +31,11 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        // Clinic settings (catalog, profile) are admin-only; staff are read-only.
-        Gate::define('manage-clinic-settings', fn (User $user): bool => $user->isAdmin());
-
-        // Patients are managed by clinical staff too, not just admins.
-        Gate::define('manage-patients', fn (User $user): bool => in_array(
-            $user->role, [UserRole::Admin, UserRole::Staff], true,
-        ));
-
-        // The retention pipeline is a staff workflow, like patients.
-        Gate::define('manage-pipeline', fn (User $user): bool => in_array(
-            $user->role, [UserRole::Admin, UserRole::Staff], true,
-        ));
-
-        // Scheduling (booking, lifecycle) is a staff workflow too.
-        Gate::define('manage-scheduling', fn (User $user): bool => in_array(
-            $user->role, [UserRole::Admin, UserRole::Staff], true,
-        ));
-
-        // Financial (budgets, transactions) is a staff workflow too.
-        Gate::define('manage-financial', fn (User $user): bool => in_array(
-            $user->role, [UserRole::Admin, UserRole::Staff], true,
-        ));
+        // Authorization is RBAC via spatie/laravel-permission: the manage-* abilities
+        // (manage-patients/pipeline/scheduling/financial/clinic-settings/users) are
+        // spatie permissions seeded per tenant and granted to the admin/staff roles,
+        // so `$user->can('manage-…')` and `authorize('manage-…')` resolve from the
+        // user's role. See the seed_roles_and_permissions tenant migration.
 
         // A missed/cancelled appointment drops the patient's active pipeline card.
         // Registered per-event (not handle/__invoke) so one listener serves both

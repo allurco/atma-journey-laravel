@@ -7,6 +7,7 @@
         ['label' => 'Especialidades', 'route' => 'especialidades'],
         ['label' => 'Procedimentos', 'route' => 'procedimentos'],
         ['label' => 'Médicos', 'route' => 'medicos'],
+        ['label' => 'Equipe', 'route' => 'equipe', 'can' => 'manage-users'],
     ];
 @endphp
 
@@ -16,6 +17,7 @@
     <div class="flex items-start gap-8 max-md:flex-col">
         <nav class="w-full md:w-56 flex-shrink-0 space-y-1" aria-label="{{ __('Configurações') }}">
             @foreach ($tabs as $tab)
+                @continue(isset($tab['can']) && ! auth()->user()?->can($tab['can']))
                 @if ($tab['route'])
                     @php($active = request()->routeIs($tab['route']))
                     <a href="{{ route($tab['route']) }}" wire:navigate @class([
