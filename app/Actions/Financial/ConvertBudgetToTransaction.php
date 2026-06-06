@@ -9,6 +9,7 @@ use App\Enums\PaymentMethod;
 use App\Enums\PaymentStatus;
 use App\Models\Budget;
 use App\Models\Transaction;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -39,7 +40,7 @@ class ConvertBudgetToTransaction
             foreach ($budget->items as $item) {
                 $transaction->items()->create([
                     'name' => $item->name,
-                    'price' => (float) $item->unit_price * $item->quantity,
+                    'price' => Money::multiply($item->unit_price, $item->quantity),
                     'discount' => $item->discount,
                 ]);
             }

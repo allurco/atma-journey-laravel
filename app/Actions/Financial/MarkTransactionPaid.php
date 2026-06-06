@@ -6,11 +6,13 @@ namespace App\Actions\Financial;
 
 use App\Enums\PaymentStatus;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Marks a transaction paid and rolls its total into the patient's LTV — the
  * headline number the patient detail shows. Idempotent: paying an already-paid
- * transaction does nothing.
+ * transaction does nothing. The LTV update is an atomic SQL increment inside a
+ * transaction, so concurrent payments can't lose an update.
  */
 class MarkTransactionPaid
 {
@@ -20,13 +22,11 @@ class MarkTransactionPaid
             return $transaction;
         }
 
-        $transaction->update(['status' => PaymentStatus::Paid]);
+        return DB::transaction(function () use ($transaction): Transaction {
+            $transaction->update(['status' => PaymentStatus::Paid]);
+            $transaction->patient()->increment('ltv', $transaction->total);
 
-        $patient = $transaction->patient;
-        // Direct assignment (not mass-assignment) — ltv is a system-written rollup.
-        $patient->ltv = (string) ((float) $patient->ltv + (float) $transaction->total);
-        $patient->save();
-
-        return $transaction;
+            return $transaction;
+        });
     }
 }

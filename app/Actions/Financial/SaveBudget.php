@@ -6,6 +6,7 @@ namespace App\Actions\Financial;
 
 use App\Enums\BudgetStatus;
 use App\Models\Budget;
+use App\Support\Money;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -17,9 +18,10 @@ class SaveBudget
     public function __invoke(SaveBudgetData $data): Budget
     {
         return DB::transaction(function () use ($data): Budget {
-            $total = collect($data->items)->sum(
-                fn (array $item): float => (float) $item['unit_price'] * (int) $item['quantity'] - (float) $item['discount'],
-            );
+            $total = Money::sum(array_map(
+                fn (array $item): string => Money::lineTotal($item['unit_price'], (int) $item['quantity'], $item['discount']),
+                $data->items,
+            ));
 
             $budget = $data->id !== null
                 ? tap(Budget::findOrFail($data->id))->update([
