@@ -44,8 +44,9 @@ it('authenticates a user only on their own tenant domain', function () {
 });
 
 it('does not expose clinic login on the central domain', function () {
-    // route('login') resolves to the central app URL here (no tenant domain forced).
-    $this->get(route('login'))->assertNotFound();
+    // Clinic login lives on tenant subdomains. On the central domain /login is not a
+    // login form — it redirects to signup, so no clinic auth is exposed here.
+    $this->get(route('login'))->assertRedirect(route('signup'));
 });
 
 it('does not offer tenant self-registration', function () {
