@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
 use App\Http\Controllers\PatientPhotoController;
+use App\Livewire\Clinical\Prontuario;
 use App\Livewire\Dashboard;
 use App\Livewire\Financial\Budgets;
 use App\Livewire\Patients\Index as PatientsIndex;
@@ -42,6 +43,9 @@ Route::middleware([
         Route::get('pipeline', PipelineBoard::class)->name('pipeline');
         Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
         Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');
+        // The Prontuário (clinical record) is opened from a patient — a distinct surface
+        // from the Pacientes registry. Manageable by admin and staff (clinical work).
+        Route::get('pacientes/{patient}/prontuario', Prontuario::class)->name('pacientes.prontuario');
         // Patient photo is PII — served only to authenticated tenant users (LGPD).
         Route::get('pacientes/{patient}/foto', PatientPhotoController::class)->name('pacientes.foto');
     });

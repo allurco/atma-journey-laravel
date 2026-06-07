@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -93,6 +94,16 @@ class Patient extends Model
     public function timelineEvents(): HasMany
     {
         return $this->hasMany(TimelineEvent::class)->latest('occurred_at');
+    }
+
+    /**
+     * The patient's medical history — at most one (the prontuário's Anamnese).
+     *
+     * @return HasOne<Anamnesis, $this>
+     */
+    public function anamnesis(): HasOne
+    {
+        return $this->hasOne(Anamnesis::class);
     }
 
     /**
