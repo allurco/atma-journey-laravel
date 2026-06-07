@@ -127,6 +127,16 @@ class Patient extends Model
     }
 
     /**
+     * The prontuário's uploaded documents (exams, laudos…), most recent first.
+     *
+     * @return HasMany<PatientDocument, $this>
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(PatientDocument::class)->latest('uploaded_at');
+    }
+
+    /**
      * @return HasMany<Budget, $this>
      */
     public function budgets(): HasMany

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
+use App\Http\Controllers\PatientDocumentController;
 use App\Http\Controllers\PatientPhotoController;
 use App\Http\Controllers\PrescriptionPdfController;
 use App\Livewire\Clinical\Prontuario;
@@ -51,6 +52,8 @@ Route::middleware([
         Route::get('pacientes/{patient}/foto', PatientPhotoController::class)->name('pacientes.foto');
         // Prescription PDF (receita) — generated on demand, letterhead per clinic setting.
         Route::get('prescriptions/{prescription}/pdf', PrescriptionPdfController::class)->name('prescriptions.pdf');
+        // Uploaded clinical document — auth-gated, tenant-scoped (clinical PII, LGPD).
+        Route::get('documentos/{document}/arquivo', PatientDocumentController::class)->name('documentos.arquivo');
     });
 
     // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to

@@ -6,20 +6,26 @@ namespace App\Livewire\Clinical;
 
 use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
+use App\Enums\DocumentCategory;
 use App\Enums\TimelineEventType;
 use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Url;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Livewire\WithFileUploads;
 
 #[Title('Prontuário')]
 #[Layout('components.layouts.tenant')]
 class Prontuario extends Component
 {
+    use WithFileUploads;
+
     public Patient $patient;
 
     #[Url]
@@ -49,6 +55,14 @@ class Prontuario extends Component
     ];
 
     public string $prescriptionNotes = '';
+
+    public ?TemporaryUploadedFile $documentUpload = null;
+
+    public string $documentCategory = 'exam';
+
+    public string $documentTitle = '';
+
+    public string $documentFilter = 'all';
 
     public function mount(Patient $patient): void
     {
@@ -155,13 +169,45 @@ class Prontuario extends Component
         $this->reset('prescriptionDoctorId', 'prescriptionItems', 'prescriptionNotes');
     }
 
+    public function addDocument(): void
+    {
+        $this->authorize('manage-patients');
+
+        $this->validate([
+            'documentUpload' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            'documentCategory' => ['required', Rule::enum(DocumentCategory::class)],
+            'documentTitle' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $path = $this->documentUpload->store('patient-documents', 'local');
+
+        $this->patient->documents()->create([
+            'category' => $this->documentCategory,
+            'title' => $this->documentTitle ?: $this->documentUpload->getClientOriginalName(),
+            'file_path' => $path,
+            'mime' => (string) $this->documentUpload->getMimeType(),
+            'size' => (int) $this->documentUpload->getSize(),
+            'uploaded_by' => auth()->id(),
+            'uploaded_at' => now(),
+        ]);
+
+        $this->reset('documentUpload', 'documentTitle');
+        $this->documentCategory = 'exam';
+    }
+
     public function render(): View
     {
+        $documents = $this->patient->documents()
+            ->when($this->documentFilter !== 'all', fn ($query) => $query->where('category', $this->documentFilter))
+            ->get();
+
         return view('livewire.clinical.prontuario', [
             'canManage' => Gate::allows('manage-patients'),
             'clinicalNotes' => $this->patient->clinicalNotes()->with('doctor')->get(),
             'prescriptions' => $this->patient->prescriptions()->with('doctor')->get(),
             'doctors' => Doctor::where('active', true)->orderBy('name')->get(),
+            'documents' => $documents,
+            'documentCategories' => DocumentCategory::cases(),
         ]);
     }
 }
