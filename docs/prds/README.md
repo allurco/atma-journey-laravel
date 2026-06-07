@@ -25,7 +25,17 @@ PRDs are written **just-in-time** — the detailed spec for a PRD is authored ri
 | 11 | Messaging Automation | Phase 2 | ⬜ backlog | `11-messaging-automation.md` |
 | 12 | Payment Gateway | Phase 2 | ⬜ backlog | `12-payment-gateway.md` |
 | 13 | Billing & Subscriptions | Phase 2 | ⬜ backlog | `13-billing-subscriptions.md` |
+| 14 | Front-desk Copilot — Funnel & Recall ✦ | v1.1 | 🔜 next | `14-frontdesk-copilot-funnel.md` |
+| 15 | Retention Core — No-show & Quote Signals ✦ | v1.1 | ⬜ planned | `15-retention-core-signals.md` |
+| 16 | Clinical Signals — Exam AI & Doctor Approval ✦ | v1.1 | ⬜ planned | `16-clinical-signals.md` |
 
 **MVP = PRDs 0–5** (the sellable retention loop).
 
-Legend: 🔜 next · 🚧 in progress · ✅ done · ⬜ planned
+✦ The **Front-desk Copilot** trilogy (14–16) — the agentic retention layer. Shared design:
+[`../superpowers/specs/2026-06-07-frontdesk-copilot-sinal-design.md`](../superpowers/specs/2026-06-07-frontdesk-copilot-sinal-design.md);
+decisions in `../adr/0001`, `../adr/0002`. Built behind one `RaiseSinal` seam + one feed, in order 14 → 15 → 16.
+They **absorb and refine** the earlier sketches: 14–15 supersede the analytics half of **9** and the
+messaging of **11**; 16 consumes **6**/**10**'s exam infra rather than duplicating it. Reconcile 9/10/11
+against the trilogy when those come up for build.
+
+Legend: 🔜 next · 🚧 in progress · ✅ done · ⬜ planned · ✦ Copilot trilogy
