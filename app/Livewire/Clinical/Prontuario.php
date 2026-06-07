@@ -7,6 +7,7 @@ namespace App\Livewire\Clinical;
 use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\DocumentCategory;
+use App\Enums\ExamFindingFlag;
 use App\Enums\TimelineEventType;
 use App\Models\Doctor;
 use App\Models\Patient;
@@ -63,6 +64,21 @@ class Prontuario extends Component
     public string $documentTitle = '';
 
     public string $documentFilter = 'all';
+
+    public ?int $examDocumentId = null;
+
+    public string $examType = '';
+
+    public string $examCollectedAt = '';
+
+    /**
+     * @var list<array{label: string, value: string, unit: string, reference_range: string, flag: string}>
+     */
+    public array $examFindings = [
+        ['label' => '', 'value' => '', 'unit' => '', 'reference_range' => '', 'flag' => 'normal'],
+    ];
+
+    public bool $showExamForm = false;
 
     public function mount(Patient $patient): void
     {
@@ -195,6 +211,49 @@ class Prontuario extends Component
         $this->documentCategory = 'exam';
     }
 
+    public function addExamFinding(): void
+    {
+        $this->examFindings[] = ['label' => '', 'value' => '', 'unit' => '', 'reference_range' => '', 'flag' => 'normal'];
+    }
+
+    public function removeExamFinding(int $index): void
+    {
+        unset($this->examFindings[$index]);
+        $this->examFindings = array_values($this->examFindings);
+
+        if ($this->examFindings === []) {
+            $this->addExamFinding();
+        }
+    }
+
+    public function saveExamResult(): void
+    {
+        $this->authorize('manage-patients');
+
+        $validated = $this->validate([
+            'examType' => ['required', 'string', 'max:255'],
+            'examDocumentId' => ['nullable', 'integer', 'exists:patient_documents,id'],
+            'examCollectedAt' => ['nullable', 'date'],
+            'examFindings' => ['required', 'array', 'min:1'],
+            'examFindings.*.label' => ['required', 'string', 'max:255'],
+            'examFindings.*.value' => ['nullable', 'string', 'max:255'],
+            'examFindings.*.unit' => ['nullable', 'string', 'max:50'],
+            'examFindings.*.reference_range' => ['nullable', 'string', 'max:100'],
+            'examFindings.*.flag' => ['required', Rule::enum(ExamFindingFlag::class)],
+        ]);
+
+        $result = $this->patient->examResults()->create([
+            'patient_document_id' => $validated['examDocumentId'] ?? null,
+            'exam_type' => $validated['examType'],
+            'collected_at' => $this->examCollectedAt ?: null,
+            'source' => 'manual',
+        ]);
+
+        $result->findings()->createMany($validated['examFindings']);
+
+        $this->reset('examDocumentId', 'examType', 'examCollectedAt', 'examFindings', 'showExamForm');
+    }
+
     public function render(): View
     {
         $documents = $this->patient->documents()
@@ -208,6 +267,9 @@ class Prontuario extends Component
             'doctors' => Doctor::where('active', true)->orderBy('name')->get(),
             'documents' => $documents,
             'documentCategories' => DocumentCategory::cases(),
+            'examResults' => $this->patient->examResults()->with('findings')->get(),
+            'examDocuments' => $this->patient->documents()->where('category', DocumentCategory::Exam)->get(),
+            'examFindingFlags' => ExamFindingFlag::cases(),
         ]);
     }
 }

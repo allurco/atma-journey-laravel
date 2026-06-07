@@ -353,6 +353,106 @@
                     @endforelse
                 </div>
             </div>
+
+            {{-- Resultados de exames --}}
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <div>
+                        <h2 class="text-sm font-semibold text-slate-800">Resultados de exames</h2>
+                        <p class="text-xs text-slate-500">Valores estruturados, opcionalmente vinculados a um exame enviado.</p>
+                    </div>
+                    @if ($canManage)
+                        <x-ui.button variant="secondary" type="button" wire:click="$toggle('showExamForm')">
+                            {{ $showExamForm ? 'Cancelar' : '+ Registrar resultado' }}
+                        </x-ui.button>
+                    @endif
+                </div>
+
+                @if ($canManage && $showExamForm)
+                    <form wire:submit="saveExamResult" class="space-y-4 border-b border-slate-100 bg-slate-50/60 px-6 py-5">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Tipo de exame</label>
+                                <input type="text" wire:model="examType" placeholder="Ex.: Hemograma"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40" />
+                                @error('examType') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Data da coleta</label>
+                                <input type="date" wire:model="examCollectedAt"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40" />
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Documento (opcional)</label>
+                                <select wire:model="examDocumentId"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                    <option value="">—</option>
+                                    @foreach ($examDocuments as $examDoc)
+                                        <option value="{{ $examDoc->id }}">{{ $examDoc->title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="block text-sm font-medium text-slate-700">Achados</label>
+                            @foreach ($examFindings as $i => $finding)
+                                <div class="grid grid-cols-1 gap-2 sm:grid-cols-12" wire:key="finding-{{ $i }}">
+                                    <input wire:model="examFindings.{{ $i }}.label" placeholder="Parâmetro"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-3" />
+                                    <input wire:model="examFindings.{{ $i }}.value" placeholder="Valor"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2" />
+                                    <input wire:model="examFindings.{{ $i }}.unit" placeholder="Unidade"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2" />
+                                    <input wire:model="examFindings.{{ $i }}.reference_range" placeholder="Referência"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2" />
+                                    <select wire:model="examFindings.{{ $i }}.flag"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2">
+                                        @foreach ($examFindingFlags as $flag)
+                                            <option value="{{ $flag->value }}">{{ $flag->label() }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="button" wire:click="removeExamFinding({{ $i }})" aria-label="Remover"
+                                        class="flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-slate-400 transition-colors hover:border-rose-200 hover:text-rose-500 sm:col-span-1">&times;</button>
+                                    @error('examFindings.'.$i.'.label')
+                                        <p class="text-sm text-rose-600 sm:col-span-12">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @endforeach
+                            <button type="button" wire:click="addExamFinding" class="text-sm font-medium text-teal-600 hover:text-teal-700">+ Adicionar achado</button>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-ui.button type="submit">Salvar resultado</x-ui.button>
+                        </div>
+                    </form>
+                @endif
+
+                <div class="divide-y divide-slate-100">
+                    @forelse ($examResults as $result)
+                        <div class="px-6 py-4" wire:key="exam-{{ $result->id }}">
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <span class="text-sm font-medium text-slate-700">{{ $result->exam_type }}</span>
+                                <span class="text-xs text-slate-400">{{ $result->collected_at?->format('d/m/Y') }}</span>
+                            </div>
+                            <div class="space-y-1">
+                                @foreach ($result->findings as $finding)
+                                    <div class="flex flex-wrap items-center gap-2 text-sm">
+                                        <span class="text-slate-600">{{ $finding->label }}:</span>
+                                        <span class="font-medium text-slate-700">{{ $finding->value }} {{ $finding->unit }}</span>
+                                        @if ($finding->reference_range)
+                                            <span class="text-xs text-slate-400">(ref. {{ $finding->reference_range }})</span>
+                                        @endif
+                                        <x-ui.badge :color="$finding->flag->badgeClasses()">{{ $finding->flag->label() }}</x-ui.badge>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @empty
+                        <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhum resultado registrado.</p>
+                    @endforelse
+                </div>
+            </div>
         </div>
     @endif
 </div>
