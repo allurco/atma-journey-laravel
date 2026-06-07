@@ -137,6 +137,16 @@ class Patient extends Model
     }
 
     /**
+     * The prontuário's exam results (with findings), most recent first.
+     *
+     * @return HasMany<ExamResult, $this>
+     */
+    public function examResults(): HasMany
+    {
+        return $this->hasMany(ExamResult::class)->latest();
+    }
+
+    /**
      * @return HasMany<Budget, $this>
      */
     public function budgets(): HasMany
