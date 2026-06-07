@@ -20,6 +20,8 @@ final class UpdateClinicProfile
             'email' => $data->email,
             'phone' => $data->phone,
             'address' => $data->address,
+            'uses_custom_prescription_paper' => $data->usesCustomPrescriptionPaper,
+            'prescription_header_margin_mm' => $data->prescriptionHeaderMarginMm,
         ]);
 
         if ($nameChanged) {

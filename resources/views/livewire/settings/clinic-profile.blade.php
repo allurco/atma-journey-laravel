@@ -66,6 +66,25 @@
             @error('address') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
         </div>
 
+        <div class="rounded-xl border border-slate-200 bg-slate-50/60 p-4">
+            <label class="flex items-start gap-3">
+                <input type="checkbox" wire:model.live="usesCustomPrescriptionPaper" @disabled(! $canManage)
+                    class="mt-0.5 h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500/40" />
+                <span>
+                    <span class="block text-sm font-medium text-slate-700">Receituário próprio (papel timbrado)</span>
+                    <span class="block text-xs text-slate-500">A clínica imprime as receitas no próprio papel timbrado — o PDF não gera o cabeçalho e reserva espaço no topo.</span>
+                </span>
+            </label>
+
+            @if ($usesCustomPrescriptionPaper)
+                <div class="mt-3 sm:max-w-xs">
+                    <label for="margin" class="mb-2 block text-sm font-medium text-slate-700">Margem superior reservada (mm)</label>
+                    <input id="margin" type="number" min="0" max="120" wire:model="prescriptionHeaderMarginMm" placeholder="35" @disabled(! $canManage) class="{{ $inputClasses }}" />
+                    @error('prescriptionHeaderMarginMm') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
+                </div>
+            @endif
+        </div>
+
         @if ($canManage)
             <button type="submit" class="px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 transition-all font-medium">
                 Salvar alterações

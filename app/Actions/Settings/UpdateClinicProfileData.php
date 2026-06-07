@@ -12,5 +12,7 @@ final readonly class UpdateClinicProfileData
         public ?string $email = null,
         public ?string $phone = null,
         public ?string $address = null,
+        public bool $usesCustomPrescriptionPaper = false,
+        public ?int $prescriptionHeaderMarginMm = null,
     ) {}
 }
