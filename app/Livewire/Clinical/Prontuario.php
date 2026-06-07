@@ -39,6 +39,17 @@ class Prontuario extends Component
 
     public ?int $noteDoctorId = null;
 
+    public ?int $prescriptionDoctorId = null;
+
+    /**
+     * @var list<array{drug: string, dose: string, frequency: string, duration: string}>
+     */
+    public array $prescriptionItems = [
+        ['drug' => '', 'dose' => '', 'frequency' => '', 'duration' => ''],
+    ];
+
+    public string $prescriptionNotes = '';
+
     public function mount(Patient $patient): void
     {
         $this->patient = $patient;
@@ -104,11 +115,52 @@ class Prontuario extends Component
         $this->reset('noteContent', 'noteDoctorId');
     }
 
+    public function addPrescriptionItem(): void
+    {
+        $this->prescriptionItems[] = ['drug' => '', 'dose' => '', 'frequency' => '', 'duration' => ''];
+    }
+
+    public function removePrescriptionItem(int $index): void
+    {
+        unset($this->prescriptionItems[$index]);
+        $this->prescriptionItems = array_values($this->prescriptionItems);
+
+        // Always keep at least one drug line in the form.
+        if ($this->prescriptionItems === []) {
+            $this->addPrescriptionItem();
+        }
+    }
+
+    public function savePrescription(): void
+    {
+        $this->authorize('manage-patients');
+
+        $validated = $this->validate([
+            'prescriptionDoctorId' => ['required', 'integer', 'exists:doctors,id'],
+            'prescriptionItems' => ['required', 'array', 'min:1'],
+            'prescriptionItems.*.drug' => ['required', 'string', 'max:255'],
+            'prescriptionItems.*.dose' => ['nullable', 'string', 'max:255'],
+            'prescriptionItems.*.frequency' => ['nullable', 'string', 'max:255'],
+            'prescriptionItems.*.duration' => ['nullable', 'string', 'max:255'],
+            'prescriptionNotes' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $this->patient->prescriptions()->create([
+            'doctor_id' => $validated['prescriptionDoctorId'],
+            'items' => $validated['prescriptionItems'],
+            'notes' => $this->prescriptionNotes ?: null,
+            'issued_at' => now(),
+        ]);
+
+        $this->reset('prescriptionDoctorId', 'prescriptionItems', 'prescriptionNotes');
+    }
+
     public function render(): View
     {
         return view('livewire.clinical.prontuario', [
             'canManage' => Gate::allows('manage-patients'),
             'clinicalNotes' => $this->patient->clinicalNotes()->with('doctor')->get(),
+            'prescriptions' => $this->patient->prescriptions()->with('doctor')->get(),
             'doctors' => Doctor::where('active', true)->orderBy('name')->get(),
         ]);
     }

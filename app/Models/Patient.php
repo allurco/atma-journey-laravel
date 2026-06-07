@@ -117,6 +117,16 @@ class Patient extends Model
     }
 
     /**
+     * The prontuário's prescriptions (receitas), most recent first.
+     *
+     * @return HasMany<Prescription, $this>
+     */
+    public function prescriptions(): HasMany
+    {
+        return $this->hasMany(Prescription::class)->latest('issued_at');
+    }
+
+    /**
      * @return HasMany<Budget, $this>
      */
     public function budgets(): HasMany
