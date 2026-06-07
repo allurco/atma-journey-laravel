@@ -48,12 +48,14 @@
             ])>
             Receitas
         </button>
-        @foreach (['Documentos & Exames'] as $soon)
-            <span class="flex items-center gap-1.5 pb-3 text-sm font-medium text-slate-300">
-                {{ $soon }}
-                <span class="text-[10px] uppercase tracking-wider text-slate-300">em breve</span>
-            </span>
-        @endforeach
+        <button type="button" wire:click="$set('tab', 'documentos')"
+            @class([
+                'pb-3 text-sm font-medium transition-colors',
+                'border-b-2 border-teal-500 text-teal-700' => $tab === 'documentos',
+                'text-slate-400 hover:text-slate-600' => $tab !== 'documentos',
+            ])>
+            Documentos &amp; Exames
+        </button>
     </div>
 
     @if ($tab === 'anamnese')
@@ -276,6 +278,78 @@
                         </div>
                     @empty
                         <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhuma receita emitida.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @elseif ($tab === 'documentos')
+        <div class="mt-6 space-y-6">
+            @if ($canManage)
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Enviar documento</h2>
+                        <p class="text-xs text-slate-500">Exames, laudos, termos — PDF ou imagem até 10&nbsp;MB.</p>
+                    </div>
+                    <form wire:submit="addDocument" class="space-y-4 p-6">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Tipo</label>
+                                <select wire:model="documentCategory"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                    @foreach ($documentCategories as $category)
+                                        <option value="{{ $category->value }}">{{ $category->label() }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Título (opcional)</label>
+                                <input type="text" wire:model="documentTitle" placeholder="Ex.: Hemograma completo"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40" />
+                                @error('documentTitle')
+                                    <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                        <div>
+                            <input type="file" wire:model="documentUpload" accept="application/pdf,image/jpeg,image/png,image/webp"
+                                class="block text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-teal-50 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-teal-700 hover:file:bg-teal-100" />
+                            <div wire:loading wire:target="documentUpload" class="mt-1 text-xs text-slate-400">Enviando…</div>
+                            @error('documentUpload')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="flex justify-end">
+                            <x-ui.button type="submit">Enviar documento</x-ui.button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
+                    <h2 class="text-sm font-semibold text-slate-800">Documentos</h2>
+                    <select wire:model.live="documentFilter"
+                        class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                        <option value="all">Todos</option>
+                        @foreach ($documentCategories as $category)
+                            <option value="{{ $category->value }}">{{ $category->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($documents as $document)
+                        <div class="flex items-center justify-between gap-4 px-6 py-3" wire:key="doc-{{ $document->id }}">
+                            <div class="flex min-w-0 items-center gap-3">
+                                <x-ui.badge color="bg-slate-100 text-slate-600">{{ $document->category->label() }}</x-ui.badge>
+                                <div class="min-w-0">
+                                    <a href="{{ $document->fileUrl() }}" target="_blank" class="truncate text-sm font-medium text-teal-700 hover:text-teal-800">{{ $document->title }}</a>
+                                    <div class="text-xs text-slate-400">{{ $document->uploaded_at->format('d/m/Y') }} · {{ number_format($document->size / 1024, 0, ',', '.') }} KB</div>
+                                </div>
+                            </div>
+                            <a href="{{ $document->fileUrl() }}" target="_blank" class="flex-shrink-0 text-xs font-medium text-teal-600 hover:text-teal-700">Abrir</a>
+                        </div>
+                    @empty
+                        <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhum documento enviado.</p>
                     @endforelse
                 </div>
             </div>
