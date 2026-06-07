@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Clinical;
 
+use App\Actions\Patients\AppendTimelineEvent;
+use App\Actions\Patients\AppendTimelineEventData;
+use App\Enums\TimelineEventType;
+use App\Models\Doctor;
 use App\Models\Patient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -30,6 +34,10 @@ class Prontuario extends Component
     public string $familyHistory = '';
 
     public bool $anamneseSaved = false;
+
+    public string $noteContent = '';
+
+    public ?int $noteDoctorId = null;
 
     public function mount(Patient $patient): void
     {
@@ -70,10 +78,38 @@ class Prontuario extends Component
         $this->anamneseSaved = true;
     }
 
+    public function addClinicalNote(AppendTimelineEvent $appendTimelineEvent): void
+    {
+        $this->authorize('manage-patients');
+
+        $validated = $this->validate([
+            'noteContent' => ['required', 'string', 'max:5000'],
+            'noteDoctorId' => ['nullable', 'integer', 'exists:doctors,id'],
+        ]);
+
+        $this->patient->clinicalNotes()->create([
+            'doctor_id' => $validated['noteDoctorId'] ?? null,
+            'content' => $validated['noteContent'],
+            'occurred_at' => now(),
+        ]);
+
+        // Record the activity on the patient timeline (the detail, not the clinical
+        // content, lives in the prontuário) — through the one timeline seam.
+        $appendTimelineEvent(new AppendTimelineEventData(
+            patientId: $this->patient->id,
+            type: TimelineEventType::Nota,
+            title: 'Evolução clínica',
+        ));
+
+        $this->reset('noteContent', 'noteDoctorId');
+    }
+
     public function render(): View
     {
         return view('livewire.clinical.prontuario', [
             'canManage' => Gate::allows('manage-patients'),
+            'clinicalNotes' => $this->patient->clinicalNotes()->with('doctor')->get(),
+            'doctors' => Doctor::where('active', true)->orderBy('name')->get(),
         ]);
     }
 }

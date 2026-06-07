@@ -107,6 +107,16 @@ class Patient extends Model
     }
 
     /**
+     * The prontuário's clinical evolution notes, most recent first.
+     *
+     * @return HasMany<ClinicalNote, $this>
+     */
+    public function clinicalNotes(): HasMany
+    {
+        return $this->hasMany(ClinicalNote::class)->latest('occurred_at');
+    }
+
+    /**
      * @return HasMany<Budget, $this>
      */
     public function budgets(): HasMany

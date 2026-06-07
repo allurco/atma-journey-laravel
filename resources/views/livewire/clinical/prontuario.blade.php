@@ -32,7 +32,15 @@
             ])>
             Anamnese
         </button>
-        @foreach (['Evolução', 'Receitas', 'Documentos & Exames'] as $soon)
+        <button type="button" wire:click="$set('tab', 'evolucao')"
+            @class([
+                'pb-3 text-sm font-medium transition-colors',
+                'border-b-2 border-teal-500 text-teal-700' => $tab === 'evolucao',
+                'text-slate-400 hover:text-slate-600' => $tab !== 'evolucao',
+            ])>
+            Evolução
+        </button>
+        @foreach (['Receitas', 'Documentos & Exames'] as $soon)
             <span class="flex items-center gap-1.5 pb-3 text-sm font-medium text-slate-300">
                 {{ $soon }}
                 <span class="text-[10px] uppercase tracking-wider text-slate-300">em breve</span>
@@ -118,6 +126,58 @@
                         </div>
                     </dl>
                 @endif
+            </div>
+        </div>
+    @elseif ($tab === 'evolucao')
+        <div class="mt-6 space-y-6">
+            @if ($canManage)
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Nova evolução</h2>
+                        <p class="text-xs text-slate-500">Registre a evolução clínica do paciente.</p>
+                    </div>
+                    <form wire:submit="addClinicalNote" class="space-y-4 p-6">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Profissional (opcional)</label>
+                            <select wire:model="noteDoctorId"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                <option value="">—</option>
+                                @foreach ($doctors as $doctor)
+                                    <option value="{{ $doctor->id }}">{{ $doctor->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Evolução</label>
+                            <textarea wire:model="noteContent" rows="4"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+                                placeholder="Evolução clínica, conduta, observações"></textarea>
+                            @error('noteContent')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div class="flex justify-end">
+                            <x-ui.button type="submit">Registrar evolução</x-ui.button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <h2 class="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-800">Histórico de evolução</h2>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($clinicalNotes as $note)
+                        <div class="px-6 py-4" wire:key="note-{{ $note->id }}">
+                            <div class="mb-1 flex items-center justify-between gap-3">
+                                <span class="text-sm font-medium text-slate-700">{{ $note->doctor?->name ?? 'Equipe' }}</span>
+                                <span class="text-xs text-slate-400">{{ $note->occurred_at->format('d/m/Y H:i') }}</span>
+                            </div>
+                            <p class="whitespace-pre-line text-sm text-slate-600">{{ $note->content }}</p>
+                        </div>
+                    @empty
+                        <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhuma evolução registrada.</p>
+                    @endforelse
+                </div>
             </div>
         </div>
     @endif
