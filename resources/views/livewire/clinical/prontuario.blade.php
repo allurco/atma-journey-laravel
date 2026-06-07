@@ -40,7 +40,15 @@
             ])>
             Evolução
         </button>
-        @foreach (['Receitas', 'Documentos & Exames'] as $soon)
+        <button type="button" wire:click="$set('tab', 'receitas')"
+            @class([
+                'pb-3 text-sm font-medium transition-colors',
+                'border-b-2 border-teal-500 text-teal-700' => $tab === 'receitas',
+                'text-slate-400 hover:text-slate-600' => $tab !== 'receitas',
+            ])>
+            Receitas
+        </button>
+        @foreach (['Documentos & Exames'] as $soon)
             <span class="flex items-center gap-1.5 pb-3 text-sm font-medium text-slate-300">
                 {{ $soon }}
                 <span class="text-[10px] uppercase tracking-wider text-slate-300">em breve</span>
@@ -176,6 +184,91 @@
                         </div>
                     @empty
                         <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhuma evolução registrada.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    @elseif ($tab === 'receitas')
+        <div class="mt-6 space-y-6">
+            @if ($canManage)
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Nova receita</h2>
+                        <p class="text-xs text-slate-500">Prescrição assinada por um profissional.</p>
+                    </div>
+                    <form wire:submit="savePrescription" class="space-y-4 p-6">
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Profissional</label>
+                            <select wire:model="prescriptionDoctorId"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                <option value="">Selecione...</option>
+                                @foreach ($doctors as $doctor)
+                                    <option value="{{ $doctor->id }}">{{ $doctor->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('prescriptionDoctorId')
+                                <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+
+                        <div class="space-y-3">
+                            <label class="block text-sm font-medium text-slate-700">Medicamentos</label>
+                            @foreach ($prescriptionItems as $i => $item)
+                                <div class="grid grid-cols-1 gap-2 sm:grid-cols-12" wire:key="presc-item-{{ $i }}">
+                                    <input wire:model="prescriptionItems.{{ $i }}.drug" placeholder="Medicamento"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-4" />
+                                    <input wire:model="prescriptionItems.{{ $i }}.dose" placeholder="Dose"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2" />
+                                    <input wire:model="prescriptionItems.{{ $i }}.frequency" placeholder="Frequência"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-2" />
+                                    <input wire:model="prescriptionItems.{{ $i }}.duration" placeholder="Duração"
+                                        class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40 sm:col-span-3" />
+                                    <button type="button" wire:click="removePrescriptionItem({{ $i }})" aria-label="Remover"
+                                        class="flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2 text-slate-400 transition-colors hover:border-rose-200 hover:text-rose-500 sm:col-span-1">&times;</button>
+                                    @error('prescriptionItems.'.$i.'.drug')
+                                        <p class="text-sm text-rose-600 sm:col-span-12">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @endforeach
+                            <button type="button" wire:click="addPrescriptionItem" class="text-sm font-medium text-teal-600 hover:text-teal-700">+ Adicionar medicamento</button>
+                        </div>
+
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Observações (opcional)</label>
+                            <textarea wire:model="prescriptionNotes" rows="2"
+                                class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40"
+                                placeholder="Orientações ao paciente"></textarea>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <x-ui.button type="submit">Emitir receita</x-ui.button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            <div class="rounded-2xl border border-slate-200 bg-white">
+                <h2 class="border-b border-slate-100 px-6 py-4 text-sm font-semibold text-slate-800">Receitas emitidas</h2>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($prescriptions as $prescription)
+                        <div class="px-6 py-4" wire:key="presc-{{ $prescription->id }}">
+                            <div class="mb-2 flex items-center justify-between gap-3">
+                                <span class="text-sm font-medium text-slate-700">{{ $prescription->doctor?->name ?? 'Profissional' }}</span>
+                                <span class="text-xs text-slate-400">{{ $prescription->issued_at->format('d/m/Y') }}</span>
+                            </div>
+                            <ul class="space-y-1">
+                                @foreach ($prescription->items as $item)
+                                    <li class="text-sm text-slate-600">
+                                        <span class="font-medium text-slate-700">{{ $item['drug'] }}</span>@if (! empty($item['dose'])) · {{ $item['dose'] }}@endif @if (! empty($item['frequency'])) · {{ $item['frequency'] }}@endif @if (! empty($item['duration'])) · {{ $item['duration'] }}@endif
+                                    </li>
+                                @endforeach
+                            </ul>
+                            @if ($prescription->notes)
+                                <p class="mt-2 text-xs text-slate-500">{{ $prescription->notes }}</p>
+                            @endif
+                        </div>
+                    @empty
+                        <p class="px-6 py-12 text-center text-sm text-slate-400">Nenhuma receita emitida.</p>
                     @endforelse
                 </div>
             </div>
