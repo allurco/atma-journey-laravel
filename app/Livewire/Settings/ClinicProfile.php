@@ -32,6 +32,10 @@ class ClinicProfile extends Component
 
     public string $address = '';
 
+    public bool $usesCustomPrescriptionPaper = false;
+
+    public ?int $prescriptionHeaderMarginMm = null;
+
     public ?TemporaryUploadedFile $logo = null;
 
     public bool $saved = false;
@@ -45,6 +49,8 @@ class ClinicProfile extends Component
         $this->email = (string) $clinic->email;
         $this->phone = (string) $clinic->phone;
         $this->address = (string) $clinic->address;
+        $this->usesCustomPrescriptionPaper = (bool) $clinic->uses_custom_prescription_paper;
+        $this->prescriptionHeaderMarginMm = $clinic->prescription_header_margin_mm;
     }
 
     public function save(UpdateClinicProfile $updateClinicProfile): void
@@ -57,6 +63,8 @@ class ClinicProfile extends Component
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:255'],
+            'usesCustomPrescriptionPaper' => ['boolean'],
+            'prescriptionHeaderMarginMm' => ['nullable', 'integer', 'min:0', 'max:120'],
             'logo' => ['nullable', 'image', 'max:2048'],
         ]);
 
@@ -66,6 +74,8 @@ class ClinicProfile extends Component
             email: $validated['email'] ?: null,
             phone: $validated['phone'] ?: null,
             address: $validated['address'] ?: null,
+            usesCustomPrescriptionPaper: (bool) $validated['usesCustomPrescriptionPaper'],
+            prescriptionHeaderMarginMm: $validated['prescriptionHeaderMarginMm'] ?? null,
         ));
 
         $this->storeLogo();

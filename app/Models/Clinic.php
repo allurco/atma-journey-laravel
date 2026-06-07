@@ -13,7 +13,20 @@ class Clinic extends Model
     /** @use HasFactory<ClinicFactory> */
     use HasFactory;
 
-    protected $fillable = ['name', 'logo_path', 'cnpj', 'email', 'phone', 'address'];
+    protected $fillable = [
+        'name', 'logo_path', 'cnpj', 'email', 'phone', 'address',
+        'uses_custom_prescription_paper', 'prescription_header_margin_mm',
+    ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'uses_custom_prescription_paper' => 'boolean',
+        ];
+    }
 
     /**
      * The clinic is a per-tenant singleton. Return it, seeding one from the
