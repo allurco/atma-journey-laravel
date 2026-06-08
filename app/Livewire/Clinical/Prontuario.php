@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Livewire\Clinical;
 
+use App\Actions\Clinical\SendDocumentForSignature;
+use App\Actions\Clinical\SendDocumentForSignatureData;
 use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\DocumentCategory;
 use App\Enums\ExamFindingFlag;
 use App\Enums\TimelineEventType;
+use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\DocumentTemplate;
 use App\Models\Patient;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -64,6 +68,10 @@ class Prontuario extends Component
     public string $documentTitle = '';
 
     public string $documentFilter = 'all';
+
+    public ?int $sendTemplateId = null;
+
+    public ?int $sendAppointmentId = null;
 
     public ?int $examDocumentId = null;
 
@@ -195,20 +203,59 @@ class Prontuario extends Component
             'documentTitle' => ['nullable', 'string', 'max:255'],
         ]);
 
+        // Read metadata BEFORE store() — store() consumes the temporary upload, after
+        // which getMimeType()/getSize() can no longer stat it under stancl/tenancy.
+        $title = $this->documentTitle ?: $this->documentUpload->getClientOriginalName();
+        $mime = (string) $this->documentUpload->getMimeType();
+        $size = (int) $this->documentUpload->getSize();
         $path = $this->documentUpload->store('patient-documents', 'local');
 
         $this->patient->documents()->create([
             'category' => $this->documentCategory,
-            'title' => $this->documentTitle ?: $this->documentUpload->getClientOriginalName(),
+            'title' => $title,
             'file_path' => $path,
-            'mime' => (string) $this->documentUpload->getMimeType(),
-            'size' => (int) $this->documentUpload->getSize(),
+            'mime' => $mime,
+            'size' => $size,
             'uploaded_by' => auth()->id(),
             'uploaded_at' => now(),
         ]);
 
         $this->reset('documentUpload', 'documentTitle');
         $this->documentCategory = 'exam';
+    }
+
+    public function sendForSignature(SendDocumentForSignature $sendDocumentForSignature): void
+    {
+        $this->authorize('manage-patients');
+
+        $validated = $this->validate([
+            'sendTemplateId' => ['required', Rule::exists('document_templates', 'id')->where('active', true)],
+            'sendAppointmentId' => ['nullable', Rule::exists('appointments', 'id')->where('patient_id', $this->patient->id)],
+        ]);
+
+        $sendDocumentForSignature(new SendDocumentForSignatureData(
+            patientId: $this->patient->id,
+            templateId: (int) $validated['sendTemplateId'],
+            appointmentId: $this->sendAppointmentId,
+            sentBy: auth()->id(),
+        ));
+
+        $this->reset('sendTemplateId', 'sendAppointmentId');
+    }
+
+    public function markDocumentSigned(int $documentId, AppendTimelineEvent $appendTimelineEvent): void
+    {
+        $this->authorize('manage-patients');
+
+        $document = $this->patient->documents()->awaitingSignature()->findOrFail($documentId);
+        $document->markSigned();
+
+        $appendTimelineEvent(new AppendTimelineEventData(
+            patientId: $this->patient->id,
+            type: TimelineEventType::Concluido,
+            title: 'Documento assinado',
+            description: $document->title.' — assinatura registrada.',
+        ));
     }
 
     public function addExamFinding(): void
@@ -256,7 +303,10 @@ class Prontuario extends Component
 
     public function render(): View
     {
+        // Plain uploads (exams/laudos) — the signature documents live in their own
+        // pending/signed sections below.
         $documents = $this->patient->documents()
+            ->files()
             ->when($this->documentFilter !== 'all', fn ($query) => $query->where('category', $this->documentFilter))
             ->get();
 
@@ -266,7 +316,11 @@ class Prontuario extends Component
             'prescriptions' => $this->patient->prescriptions()->with('doctor')->get(),
             'doctors' => Doctor::where('active', true)->orderBy('name')->get(),
             'documents' => $documents,
+            'pendingDocuments' => $this->patient->documents()->awaitingSignature()->with('appointment')->latest('sent_at')->get(),
+            'signedDocuments' => $this->patient->documents()->signed()->with('appointment')->latest('signed_at')->get(),
             'documentCategories' => DocumentCategory::cases(),
+            'documentTemplates' => DocumentTemplate::active()->orderBy('name')->get(),
+            'patientAppointments' => Appointment::where('patient_id', $this->patient->id)->orderBy('date', 'desc')->get(),
             'examResults' => $this->patient->examResults()->with('findings')->get(),
             'examDocuments' => $this->patient->documents()->where('category', DocumentCategory::Exam)->get(),
             'examFindingFlags' => ExamFindingFlag::cases(),

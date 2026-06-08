@@ -325,9 +325,99 @@
                 </div>
             @endif
 
+            {{-- Enviar para assinatura --}}
+            @if ($canManage && $documentTemplates->isNotEmpty())
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Enviar para assinatura</h2>
+                        <p class="text-xs text-slate-500">Contratos, termos e questionários — o paciente recebe o link por e-mail para assinar.</p>
+                    </div>
+                    <form wire:submit="sendForSignature" class="space-y-4 p-6">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Modelo</label>
+                                <select wire:model="sendTemplateId"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                    <option value="">Selecione um modelo</option>
+                                    @foreach ($documentTemplates as $template)
+                                        <option value="{{ $template->id }}">{{ $template->name }} ({{ $template->category->label() }})</option>
+                                    @endforeach
+                                </select>
+                                @error('sendTemplateId') <p class="mt-1.5 text-sm text-rose-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Vincular à consulta (opcional)</label>
+                                <select wire:model="sendAppointmentId"
+                                    class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-slate-800 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                                    <option value="">— Nenhuma —</option>
+                                    @foreach ($patientAppointments as $appointment)
+                                        <option value="{{ $appointment->id }}">{{ $appointment->date->format('d/m/Y') }} {{ $appointment->start_time }} — {{ $appointment->service_type ?? 'Atendimento' }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <x-ui.button type="submit">Enviar para assinatura</x-ui.button>
+                        </div>
+                    </form>
+                </div>
+            @endif
+
+            {{-- Pendentes de assinatura --}}
+            @if ($pendingDocuments->isNotEmpty())
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Pendentes</h2>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @foreach ($pendingDocuments as $document)
+                            <div class="flex items-center justify-between gap-4 px-6 py-3" wire:key="pending-{{ $document->id }}">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <x-ui.badge :color="$document->signature_status->badgeClasses()">{{ $document->signature_status->label() }}</x-ui.badge>
+                                    <div class="min-w-0">
+                                        <a href="{{ $document->fileUrl() }}" target="_blank" class="truncate text-sm font-medium text-teal-700 hover:text-teal-800">{{ $document->title }}</a>
+                                        <div class="text-xs text-slate-400">
+                                            Enviado em {{ $document->sent_at?->format('d/m/Y') }}
+                                            @if ($document->appointment) · Consulta {{ $document->appointment->date->format('d/m/Y') }} @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                @if ($canManage)
+                                    <button type="button" wire:click="markDocumentSigned({{ $document->id }})"
+                                        class="flex-shrink-0 text-xs font-medium text-emerald-600 hover:text-emerald-700">Marcar como assinada</button>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
+            {{-- Assinados --}}
+            @if ($signedDocuments->isNotEmpty())
+                <div class="rounded-2xl border border-slate-200 bg-white">
+                    <div class="border-b border-slate-100 px-6 py-4">
+                        <h2 class="text-sm font-semibold text-slate-800">Assinados</h2>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @foreach ($signedDocuments as $document)
+                            <div class="flex items-center justify-between gap-4 px-6 py-3" wire:key="signed-{{ $document->id }}">
+                                <div class="flex min-w-0 items-center gap-3">
+                                    <x-ui.badge :color="$document->signature_status->badgeClasses()">{{ $document->signature_status->label() }}</x-ui.badge>
+                                    <div class="min-w-0">
+                                        <a href="{{ $document->fileUrl() }}" target="_blank" class="truncate text-sm font-medium text-teal-700 hover:text-teal-800">{{ $document->title }}</a>
+                                        <div class="text-xs text-slate-400">Assinado em {{ $document->signed_at?->format('d/m/Y') }}</div>
+                                    </div>
+                                </div>
+                                <a href="{{ $document->fileUrl() }}" target="_blank" class="flex-shrink-0 text-xs font-medium text-teal-600 hover:text-teal-700">Abrir</a>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="rounded-2xl border border-slate-200 bg-white">
                 <div class="flex items-center justify-between border-b border-slate-100 px-6 py-4">
-                    <h2 class="text-sm font-semibold text-slate-800">Documentos</h2>
+                    <h2 class="text-sm font-semibold text-slate-800">Arquivos</h2>
                     <select wire:model.live="documentFilter"
                         class="rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 transition-all focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
                         <option value="all">Todos</option>
