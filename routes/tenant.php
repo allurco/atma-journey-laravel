@@ -11,6 +11,7 @@ use App\Http\Middleware\VerifyWebhookSecret;
 use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Clinical\Prontuario;
 use App\Livewire\Dashboard;
+use App\Livewire\Doctor\Dashboard as DoctorDashboard;
 use App\Livewire\Financial\Budgets;
 use App\Livewire\Patients\Index as PatientsIndex;
 use App\Livewire\Patients\Show as PatientsShow;
@@ -43,6 +44,8 @@ Route::middleware([
 ])->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('dashboard', Dashboard::class)->name('dashboard');
+        // The doctor's daily worklist (scoped to the logged-in doctor).
+        Route::get('meu-dia', DoctorDashboard::class)->name('meu-dia');
         Route::get('agenda', WeeklyCalendar::class)->name('agenda');
         Route::get('financeiro', Budgets::class)->name('financeiro');
         Route::get('pipeline', PipelineBoard::class)->name('pipeline');

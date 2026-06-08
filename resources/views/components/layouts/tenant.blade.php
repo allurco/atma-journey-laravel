@@ -9,6 +9,11 @@
         ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index'],
         ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => 'financeiro'],
     ];
+
+    // Doctors get their daily worklist at the top of the menu.
+    if (auth()->user()?->isDoctor()) {
+        array_unshift($navItems, ['label' => 'Meu dia', 'icon' => 'clipboard-document-list', 'route' => 'meu-dia']);
+    }
 @endphp
 
 <!DOCTYPE html>
