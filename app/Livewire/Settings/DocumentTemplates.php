@@ -43,7 +43,8 @@ class DocumentTemplates extends Component
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', Rule::enum(DocumentCategory::class)],
             // A file is mandatory when creating; on edit it's optional (keep the existing one).
-            'file' => [$this->editingId === null ? 'required' : 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png,webp', 'max:10240'],
+            // PDF only — templates are rendered in the in-app viewer and sent for signature.
+            'file' => [$this->editingId === null ? 'required' : 'nullable', 'file', 'mimes:pdf', 'max:10240'],
         ]);
 
         $attributes = [

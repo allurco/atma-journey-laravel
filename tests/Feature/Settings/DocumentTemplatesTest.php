@@ -36,6 +36,19 @@ test('a template requires a name and a file on creation', function () {
         ->assertHasErrors(['name', 'file']);
 });
 
+test('a template only accepts PDF files', function () {
+    Storage::fake('local');
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(DocumentTemplates::class)
+        ->set('name', 'Contrato')
+        ->set('file', UploadedFile::fake()->image('contrato.jpg'))
+        ->call('save')
+        ->assertHasErrors('file');
+
+    expect(DocumentTemplate::count())->toBe(0);
+});
+
 test('an admin can rename and archive a template', function () {
     $this->actingAs(User::factory()->admin()->create());
     $template = DocumentTemplate::factory()->create(['name' => 'Termo antigo']);
@@ -52,6 +65,16 @@ test('an admin can rename and archive a template', function () {
 
     // Archived → gone from the active catalog the send picker uses.
     expect(DocumentTemplate::active()->whereKey($template->id)->exists())->toBeFalse();
+});
+
+test('a template exposes an in-app PDF viewer pointing at its serving route', function () {
+    $this->actingAs(User::factory()->admin()->create());
+    $template = DocumentTemplate::factory()->create(['name' => 'Contrato X']);
+
+    Livewire::test(DocumentTemplates::class)
+        ->assertSee('Contrato X')
+        ->assertSeeHtml($template->fileUrl())            // the "Ver" trigger loads the file route
+        ->assertSeeHtml('title="Visualizar documento"'); // into the viewer iframe
 });
 
 test('the front desk (staff) cannot maintain templates — it is a clinic configuration', function () {
