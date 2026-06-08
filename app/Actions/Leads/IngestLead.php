@@ -8,11 +8,13 @@ use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\ContactType;
 use App\Enums\PatientStatus;
+use App\Enums\PhoneHistorySource;
 use App\Enums\PipelineStage;
 use App\Enums\TimelineEventType;
 use App\Events\LeadReceived;
 use App\Models\LeadIngestion;
 use App\Models\Patient;
+use App\Models\PatientPhoneHistory;
 use App\Models\PipelineCard;
 use Illuminate\Support\Carbon;
 
@@ -40,17 +42,36 @@ final class IngestLead
             }
         }
 
+        // Dedup on the current canonical phone first, then fall back to a number the
+        // patient held in the past (telecoms recycle numbers, so a historical-only
+        // match is surfaced with a note rather than silently trusted).
         $patient = Patient::query()->where('phone_e164', $data->phoneE164)->first();
+        $historicalMatch = false;
+
+        if ($patient === null) {
+            $prior = PatientPhoneHistory::query()
+                ->where('phone', $data->phoneE164)
+                ->latest('recorded_at')
+                ->first();
+
+            if ($prior?->patient !== null) {
+                $patient = $prior->patient;
+                $historicalMatch = true;
+            }
+        }
+
         $matched = $patient !== null;
 
         if ($patient === null) {
-            $patient = Patient::create([
+            $patient = new Patient([
                 'name' => $data->name,
                 'phone' => $data->phoneE164,
                 'email' => $data->email,
                 'status' => PatientStatus::Lead,
                 'lead_source' => $data->source,
             ]);
+            $patient->phoneHistorySource = PhoneHistorySource::Lead;
+            $patient->save();
 
             PipelineCard::updateOrCreate(
                 ['patient_id' => $patient->id],
@@ -77,6 +98,15 @@ final class IngestLead
             title: 'Lead recebido'.($data->source !== null ? ' via '.$data->source : ''),
             description: $data->message,
         ));
+
+        if ($historicalMatch) {
+            ($this->appendTimelineEvent)(new AppendTimelineEventData(
+                patientId: $patient->id,
+                type: TimelineEventType::Nota,
+                title: 'Possível correspondência por telefone antigo',
+                description: 'Lead recebido no número '.$data->phoneE164.', um número antigo deste paciente — confirme se é a mesma pessoa.',
+            ));
+        }
 
         $this->audit($data, $patient->id, $matched);
 

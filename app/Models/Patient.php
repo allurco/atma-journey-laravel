@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PatientStatus;
+use App\Enums\PhoneHistorySource;
+use App\Observers\PatientObserver;
 use App\Support\Phone;
 use Database\Factories\PatientFactory;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,10 +27,18 @@ use Illuminate\Support\Carbon;
  * @property int $missed_appointments
  * @property string $ltv
  */
+#[ObservedBy([PatientObserver::class])]
 class Patient extends Model
 {
     /** @use HasFactory<PatientFactory> */
     use HasFactory;
+
+    /**
+     * Transient hint for the phone-history observer — the source to record for the
+     * initial number on create (e.g. {@see PhoneHistorySource::Lead} from the lead
+     * webhook). Not persisted; defaults to `registration`.
+     */
+    public ?PhoneHistorySource $phoneHistorySource = null;
 
     /**
      * Editable fields. The denormalized rollups (ltv, visit counters/dates) are
