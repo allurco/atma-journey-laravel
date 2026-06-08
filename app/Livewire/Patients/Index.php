@@ -51,6 +51,10 @@ class Index extends Component
 
     public string $address = '';
 
+    public string $emergencyContactName = '';
+
+    public string $emergencyContactPhone = '';
+
     public string $status = 'active';
 
     public string $bloodType = '';
@@ -89,6 +93,8 @@ class Index extends Component
         $this->cpf = (string) $patient->cpf;
         $this->birthDate = $patient->birth_date?->format('Y-m-d') ?? '';
         $this->address = (string) $patient->address;
+        $this->emergencyContactName = (string) $patient->emergency_contact_name;
+        $this->emergencyContactPhone = (string) $patient->emergency_contact_phone;
         $this->status = $patient->status->value;
         $this->bloodType = (string) $patient->blood_type;
         $this->allergiesText = implode(', ', $patient->allergies ?? []);
@@ -107,6 +113,8 @@ class Index extends Component
             'cpf' => ['nullable', 'string', 'max:20', $this->uniqueCpfRule()],
             'birthDate' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:255'],
+            'emergencyContactName' => ['nullable', 'string', 'max:255'],
+            'emergencyContactPhone' => ['nullable', 'string', 'max:30'],
             'status' => ['required', Rule::enum(PatientStatus::class)],
             'bloodType' => ['nullable', 'string', 'max:5'],
             'allergiesText' => ['nullable', 'string', 'max:500'],
@@ -121,6 +129,8 @@ class Index extends Component
             'cpf' => $validated['cpf'] ?: null,
             'birth_date' => $validated['birthDate'] ?: null,
             'address' => $validated['address'] ?: null,
+            'emergency_contact_name' => $validated['emergencyContactName'] ?: null,
+            'emergency_contact_phone' => $validated['emergencyContactPhone'] ?: null,
             'status' => $validated['status'],
             'blood_type' => $validated['bloodType'] ?: null,
             'allergies' => $this->parseAllergies($validated['allergiesText'] ?? null),
@@ -254,7 +264,8 @@ class Index extends Component
     {
         $this->reset([
             'editingId', 'name', 'phone', 'email', 'cpf', 'birthDate',
-            'address', 'bloodType', 'allergiesText', 'leadSource', 'photo',
+            'address', 'emergencyContactName', 'emergencyContactPhone',
+            'bloodType', 'allergiesText', 'leadSource', 'photo',
         ]);
         $this->status = 'active';
     }

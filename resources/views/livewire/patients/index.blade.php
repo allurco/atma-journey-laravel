@@ -81,6 +81,8 @@
                         <div class="sm:col-span-2">
                             <x-ui.input label="Endereço" wire:model="address" :error="$errors->first('address')" placeholder="Rua, número, bairro, cidade" />
                         </div>
+                        <x-ui.input label="Contato de emergência" wire:model="emergencyContactName" :error="$errors->first('emergencyContactName')" placeholder="Nome (parentesco)" />
+                        <x-ui.input label="Telefone de emergência" wire:model="emergencyContactPhone" :error="$errors->first('emergencyContactPhone')" placeholder="(11) 99999-0000" />
                         <div class="sm:col-span-2">
                             <x-ui.input label="Alergias (separadas por vírgula)" wire:model="allergiesText" :error="$errors->first('allergiesText')" placeholder="Dipirona, Penicilina" />
                         </div>

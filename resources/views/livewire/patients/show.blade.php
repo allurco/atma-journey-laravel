@@ -123,6 +123,9 @@
                     'Origem' => $patient->lead_source ?? '—',
                     'Primeira visita' => $patient->first_visit_date?->format('d/m/Y') ?? '—',
                     'Endereço' => $patient->address ?? '—',
+                    'Contato de emergência' => $patient->emergency_contact_name
+                        ? $patient->emergency_contact_name.($patient->emergency_contact_phone ? ' · '.$patient->emergency_contact_phone : '')
+                        : '—',
                 ])
                 <dl class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                     @foreach ($info as $label => $value)
