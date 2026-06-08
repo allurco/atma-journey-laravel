@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Livewire\Settings\ClinicProfile;
 use App\Livewire\Settings\Doctors;
+use App\Livewire\Settings\Integrations;
 use App\Livewire\Settings\Procedures;
 use App\Livewire\Settings\Specialties;
 use App\Livewire\Settings\Team;
@@ -23,6 +24,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Team / staff users — admin-only (the manage-users permission).
     Route::get('settings/equipe', Team::class)->middleware('can:manage-users')->name('equipe');
+
+    // Lead-webhook integration — the secret is sensitive, so even viewing is admin-only.
+    Route::get('settings/integracoes', Integrations::class)->middleware('can:manage-clinic-settings')->name('integracoes');
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {

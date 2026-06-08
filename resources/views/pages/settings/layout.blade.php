@@ -8,6 +8,7 @@
         ['label' => 'Procedimentos', 'route' => 'procedimentos'],
         ['label' => 'Médicos', 'route' => 'medicos'],
         ['label' => 'Equipe', 'route' => 'equipe', 'can' => 'manage-users'],
+        ['label' => 'Integrações', 'route' => 'integracoes', 'can' => 'manage-clinic-settings'],
     ];
 @endphp
 
