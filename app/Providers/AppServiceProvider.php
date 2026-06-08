@@ -10,7 +10,10 @@ use App\Events\BudgetApproved;
 use App\Events\PipelineStageChanged;
 use App\Listeners\DropActivePipelineCard;
 use App\Listeners\RecordDomainMetric;
+use App\Models\User;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -33,6 +36,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // An already-authenticated user hitting a guest page (e.g. /login) lands on
+        // their role's home — doctors on "Meu dia", everyone else on the dashboard.
+        RedirectIfAuthenticated::redirectUsing(
+            fn (Request $request): string => route(($request->user() instanceof User ? $request->user() : null)?->homeRoute() ?? 'dashboard'),
+        );
 
         // Authorization is RBAC via spatie/laravel-permission: the manage-* abilities
         // (manage-patients/pipeline/scheduling/financial/clinic-settings/users) are

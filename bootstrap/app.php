@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Middleware\DenyDoctors;
 use App\Http\Middleware\EnsureUserActive;
 use App\Http\Middleware\InitializeTenancyForWeb;
 use Illuminate\Foundation\Application;
@@ -33,6 +34,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Inbound webhooks are machine POSTs authenticated by a per-clinic secret,
         // not a session token — exempt them from CSRF.
         $middleware->validateCsrfTokens(except: ['webhooks/*']);
+
+        // Doctors are confined to their clinical surface (Meu dia, agenda, patient
+        // profiles) — this guards the back-office routes from a doctor URL.
+        $middleware->alias(['deny-doctor' => DenyDoctors::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
