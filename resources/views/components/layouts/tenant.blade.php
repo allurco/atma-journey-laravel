@@ -3,16 +3,21 @@
 @php
     $clinicName = tenant('name') ?? config('app.name');
     $navItems = [
-        ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard'],
-        ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => 'agenda'],
-        ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => 'pipeline'],
-        ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index'],
-        ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => 'financeiro'],
+        ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'can' => 'manage-financial'],
+        ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => 'agenda', 'can' => 'manage-scheduling'],
+        ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => 'pipeline', 'can' => 'manage-pipeline'],
+        ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index', 'can' => 'manage-patients'],
+        ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => 'financeiro', 'can' => 'manage-financial'],
     ];
 
-    // Doctors get their daily worklist at the top of the menu.
+    // Doctors get a clinical-only menu: their daily worklist and the agenda. No
+    // dashboard, pipeline, finance, or the patient registry — they open a patient's
+    // profile (prontuário) from "Meu dia", not a list.
     if (auth()->user()?->isDoctor()) {
-        array_unshift($navItems, ['label' => 'Meu dia', 'icon' => 'clipboard-document-list', 'route' => 'meu-dia']);
+        $navItems = [
+            ['label' => 'Meu dia', 'icon' => 'clipboard-document-list', 'route' => 'meu-dia'],
+            ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => 'agenda'],
+        ];
     }
 @endphp
 
@@ -56,6 +61,7 @@
                     <p class="text-slate-500 text-[11px] font-semibold uppercase tracking-wider px-4 mb-3" x-show="expanded">Menu</p>
                     <ul class="space-y-1">
                         @foreach ($navItems as $item)
+                            @continue(isset($item['can']) && ! auth()->user()?->can($item['can']))
                             @php($active = $item['route'] && request()->routeIs($item['route']))
                             <li>
                                 @if ($item['route'])

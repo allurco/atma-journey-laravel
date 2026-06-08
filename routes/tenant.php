@@ -43,14 +43,18 @@ Route::middleware([
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
     Route::middleware(['auth', 'verified'])->group(function () {
-        Route::get('dashboard', Dashboard::class)->name('dashboard');
         // The doctor's daily worklist (scoped to the logged-in doctor).
         Route::get('meu-dia', DoctorDashboard::class)->name('meu-dia');
         Route::get('agenda', WeeklyCalendar::class)->name('agenda');
-        Route::get('financeiro', Budgets::class)->name('financeiro');
-        Route::get('pipeline', PipelineBoard::class)->name('pipeline');
-        Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
         Route::get('pacientes/{patient}', PatientsShow::class)->name('pacientes.show');
+
+        // Back-office — doctors are confined to their clinical surface.
+        Route::middleware('deny-doctor')->group(function () {
+            Route::get('dashboard', Dashboard::class)->name('dashboard');
+            Route::get('financeiro', Budgets::class)->name('financeiro');
+            Route::get('pipeline', PipelineBoard::class)->name('pipeline');
+            Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
+        });
         // The Prontuário (clinical record) is opened from a patient — a distinct surface
         // from the Pacientes registry. Manageable by admin and staff (clinical work).
         Route::get('pacientes/{patient}/prontuario', Prontuario::class)->name('pacientes.prontuario');

@@ -148,6 +148,14 @@ class User extends Authenticatable implements PasskeyUser
     }
 
     /**
+     * The route a user lands on after login — doctors get their daily worklist.
+     */
+    public function homeRoute(): string
+    {
+        return $this->isDoctor() ? 'meu-dia' : 'dashboard';
+    }
+
+    /**
      * The practitioner record this user logs in as (when role is `doctor`).
      *
      * @return BelongsTo<Doctor, $this>
