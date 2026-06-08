@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
@@ -194,6 +195,28 @@ class Patient extends Model
             ->take(2)
             ->map(fn (string $word): string => mb_substr($word, 0, 1))
             ->implode('');
+    }
+
+    /**
+     * The clinic-maintained care needs tagged on this patient (PCD, Idoso, Gestante…).
+     * Includes archived conditions — once tagged, the alert keeps showing.
+     *
+     * @return BelongsToMany<SpecialCondition, $this>
+     */
+    public function specialConditions(): BelongsToMany
+    {
+        return $this->belongsToMany(SpecialCondition::class)->orderBy('name');
+    }
+
+    /**
+     * Whether the patient carries any standing care need — drives the booking/agenda
+     * visual alert. Uses the loaded relation when available to avoid an extra query.
+     */
+    public function hasSpecialConditions(): bool
+    {
+        return $this->relationLoaded('specialConditions')
+            ? $this->specialConditions->isNotEmpty()
+            : $this->specialConditions()->exists();
     }
 
     /**
