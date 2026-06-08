@@ -8,6 +8,7 @@ use App\Http\Controllers\PatientDocumentController;
 use App\Http\Controllers\PatientPhotoController;
 use App\Http\Controllers\PrescriptionPdfController;
 use App\Http\Middleware\VerifyWebhookSecret;
+use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Clinical\Prontuario;
 use App\Livewire\Dashboard;
 use App\Livewire\Financial\Budgets;
@@ -61,6 +62,10 @@ Route::middleware([
     // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to
     // serve the image; another clinic can never reach this one's file).
     Route::get('clinica/logo', ClinicLogoController::class)->name('clinica.logo');
+
+    // Invitation acceptance — public (the invitee has no account yet), authenticated
+    // by the token in the URL; resolved to the tenant by domain.
+    Route::get('convite/{token}', AcceptInvitation::class)->name('convite');
 
     // Inbound lead webhook — no session auth; authenticated by the per-clinic
     // secret, resolved to the tenant by domain. CSRF-exempt (see bootstrap/app.php).
