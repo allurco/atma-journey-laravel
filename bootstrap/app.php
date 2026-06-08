@@ -29,9 +29,13 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Deactivated users are logged out on their next request (immediate effect).
         $middleware->web(append: [EnsureUserActive::class]);
+
+        // Inbound webhooks are machine POSTs authenticated by a per-clinic secret,
+        // not a session token — exempt them from CSRF.
+        $middleware->validateCsrfTokens(except: ['webhooks/*']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->is('webhooks/*'),
         );
     })->create();

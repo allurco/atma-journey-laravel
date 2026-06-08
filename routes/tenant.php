@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ClinicLogoController;
+use App\Http\Controllers\LeadWebhookController;
 use App\Http\Controllers\PatientDocumentController;
 use App\Http\Controllers\PatientPhotoController;
 use App\Http\Controllers\PrescriptionPdfController;
+use App\Http\Middleware\VerifyWebhookSecret;
 use App\Livewire\Clinical\Prontuario;
 use App\Livewire\Dashboard;
 use App\Livewire\Financial\Budgets;
@@ -59,6 +61,12 @@ Route::middleware([
     // Tenant-scoped clinic logo (tenancy isolates by domain — no auth needed to
     // serve the image; another clinic can never reach this one's file).
     Route::get('clinica/logo', ClinicLogoController::class)->name('clinica.logo');
+
+    // Inbound lead webhook — no session auth; authenticated by the per-clinic
+    // secret, resolved to the tenant by domain. CSRF-exempt (see bootstrap/app.php).
+    Route::post('webhooks/leads', LeadWebhookController::class)
+        ->middleware(VerifyWebhookSecret::class)
+        ->name('webhooks.leads');
 
     // Authenticated clinic settings (profile, security, appearance).
     require __DIR__.'/settings.php';

@@ -7,6 +7,7 @@ namespace App\Models;
 use Database\Factories\ClinicFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Clinic extends Model
 {
@@ -16,6 +17,7 @@ class Clinic extends Model
     protected $fillable = [
         'name', 'logo_path', 'cnpj', 'email', 'phone', 'address',
         'uses_custom_prescription_paper', 'prescription_header_margin_mm',
+        'webhook_secret',
     ];
 
     /**
@@ -43,5 +45,27 @@ class Clinic extends Model
     public function logoUrl(): ?string
     {
         return $this->logo_path !== null ? route('clinica.logo') : null;
+    }
+
+    /**
+     * The clinic's lead-webhook secret, generated on first use.
+     */
+    public function webhookSecret(): string
+    {
+        if ($this->webhook_secret === null) {
+            $this->regenerateWebhookSecret();
+        }
+
+        return (string) $this->webhook_secret;
+    }
+
+    /**
+     * Rotate the webhook secret — the old one stops authenticating immediately.
+     */
+    public function regenerateWebhookSecret(): string
+    {
+        $this->forceFill(['webhook_secret' => Str::random(48)])->save();
+
+        return (string) $this->webhook_secret;
     }
 }

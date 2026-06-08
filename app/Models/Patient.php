@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\PatientStatus;
+use App\Support\Phone;
 use Database\Factories\PatientFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -46,6 +47,10 @@ class Patient extends Model
             $digits = $patient->cpfDigits();
             $patient->cpf_last4 = $digits !== '' ? substr($digits, -4) : null;
             $patient->cpf_hash = $digits !== '' ? self::hashCpf($digits) : null;
+
+            // Canonical E.164 form of the current phone — the blind index lead
+            // ingestion (PRD-8) dedups on, since the stored `phone` is free-form.
+            $patient->phone_e164 = Phone::normalize($patient->phone);
         });
     }
 
