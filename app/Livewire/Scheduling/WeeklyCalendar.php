@@ -34,6 +34,16 @@ class WeeklyCalendar extends Component
     #[Url(as: 'novo')]
     public ?int $agendarPatientId = null;
 
+    /**
+     * Active doctor/procedure filters (multi-select). Empty = show everything.
+     *
+     * @var list<int|string>
+     */
+    public array $filterDoctorIds = [];
+
+    /** @var list<int|string> */
+    public array $filterProcedureIds = [];
+
     public ?int $detailAppointmentId = null;
 
     public bool $showBooking = false;
@@ -162,6 +172,11 @@ class WeeklyCalendar extends Component
         $this->resetBooking();
     }
 
+    public function clearFilters(): void
+    {
+        $this->reset(['filterDoctorIds', 'filterProcedureIds']);
+    }
+
     public function render(): View
     {
         $monday = $this->monday();
@@ -172,7 +187,13 @@ class WeeklyCalendar extends Component
             ->visible()
             ->with('patient')
             ->whereBetween('date', [$monday->format('Y-m-d'), $friday->format('Y-m-d')])
+            ->when($this->filterDoctorIds !== [], fn ($query) => $query->whereIn('doctor_id', $this->filterDoctorIds))
+            ->when($this->filterProcedureIds !== [], fn ($query) => $query->whereIn('procedure_id', $this->filterProcedureIds))
             ->get();
+
+        // Smart filter options — only doctors/procedures that actually have appointments.
+        $doctorIdsWithAppointments = Appointment::query()->visible()->whereNotNull('doctor_id')->distinct()->pluck('doctor_id')->all();
+        $procedureIdsWithAppointments = Appointment::query()->visible()->whereNotNull('procedure_id')->distinct()->pluck('procedure_id')->all();
 
         $appointments = $loaded->groupBy(
             fn (Appointment $appointment): string => $appointment->date->format('Y-m-d').'|'.$appointment->start_time,
@@ -188,6 +209,8 @@ class WeeklyCalendar extends Component
             'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
             'doctors' => $this->showBooking ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'procedures' => $this->showBooking ? Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']) : collect(),
+            'filterDoctors' => $doctorIdsWithAppointments === [] ? collect() : Doctor::whereIn('id', $doctorIdsWithAppointments)->orderBy('name')->get(['id', 'name']),
+            'filterProcedures' => $procedureIdsWithAppointments === [] ? collect() : Procedure::whereIn('id', $procedureIdsWithAppointments)->orderBy('name')->get(['id', 'name']),
             'canManage' => Gate::allows('manage-scheduling'),
             'detailAppointment' => $this->detailAppointmentId !== null
                 ? Appointment::with(['patient', 'doctor'])->find($this->detailAppointmentId)

@@ -22,6 +22,36 @@
         </div>
     </div>
 
+    @if ($filterDoctors->isNotEmpty() || $filterProcedures->isNotEmpty())
+        <div class="mb-4 flex flex-wrap items-start gap-x-8 gap-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
+            @if ($filterDoctors->isNotEmpty())
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Médicos</span>
+                    @foreach ($filterDoctors as $doctor)
+                        <label class="cursor-pointer" wire:key="fd-{{ $doctor->id }}">
+                            <input type="checkbox" wire:model.live="filterDoctorIds" value="{{ $doctor->id }}" class="peer sr-only" />
+                            <span class="inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 transition-colors hover:border-slate-300 peer-checked:border-teal-300 peer-checked:bg-teal-50 peer-checked:text-teal-700">{{ $doctor->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            @endif
+            @if ($filterProcedures->isNotEmpty())
+                <div class="flex flex-wrap items-center gap-2">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Procedimentos</span>
+                    @foreach ($filterProcedures as $procedure)
+                        <label class="cursor-pointer" wire:key="fp-{{ $procedure->id }}">
+                            <input type="checkbox" wire:model.live="filterProcedureIds" value="{{ $procedure->id }}" class="peer sr-only" />
+                            <span class="inline-flex rounded-full border border-slate-200 px-3 py-1 text-xs text-slate-600 transition-colors hover:border-slate-300 peer-checked:border-teal-300 peer-checked:bg-teal-50 peer-checked:text-teal-700">{{ $procedure->name }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            @endif
+            @if ($filterDoctorIds !== [] || $filterProcedureIds !== [])
+                <button type="button" wire:click="clearFilters" class="ml-auto text-xs font-medium text-slate-500 hover:text-slate-700">Limpar filtros</button>
+            @endif
+        </div>
+    @endif
+
     <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <div class="min-w-[820px]">
             {{-- Header row --}}
