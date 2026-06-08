@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\UserRole;
+use App\Models\Doctor;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -65,6 +66,18 @@ class UserFactory extends Factory
     public function staff(): static
     {
         return $this->state(fn (array $attributes) => ['role' => UserRole::Staff]);
+    }
+
+    /**
+     * Indicate that the user is a practitioner (logs in for clinical work),
+     * linked to a Doctor record.
+     */
+    public function doctor(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => UserRole::Doctor,
+            'doctor_id' => Doctor::factory(),
+        ]);
     }
 
     /**

@@ -10,6 +10,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -22,7 +23,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property UserRole $role
  * @property bool $active
  */
-#[Fillable(['name', 'email', 'password', 'role', 'active'])]
+#[Fillable(['name', 'email', 'password', 'role', 'active', 'doctor_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser
 {
@@ -74,6 +75,24 @@ class User extends Authenticatable implements PasskeyUser
     public function isAdmin(): bool
     {
         return $this->role === UserRole::Admin;
+    }
+
+    /**
+     * Whether the user is a practitioner who logs in for clinical work.
+     */
+    public function isDoctor(): bool
+    {
+        return $this->role === UserRole::Doctor;
+    }
+
+    /**
+     * The practitioner record this user logs in as (when role is `doctor`).
+     *
+     * @return BelongsTo<Doctor, $this>
+     */
+    public function doctor(): BelongsTo
+    {
+        return $this->belongsTo(Doctor::class);
     }
 
     /**
