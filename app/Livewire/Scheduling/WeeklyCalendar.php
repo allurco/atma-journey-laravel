@@ -12,6 +12,7 @@ use App\Models\Appointment;
 use App\Models\Doctor;
 use App\Models\Patient;
 use App\Models\Procedure;
+use App\Models\SpecialCondition;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -56,6 +57,20 @@ class WeeklyCalendar extends Component
 
     public string $bookServiceType = '';
 
+    /** Unit (unidade) the visit happens at. */
+    public string $bookUnit = '';
+
+    /** Free-form scheduling note (observação). */
+    public string $bookNotes = '';
+
+    /**
+     * The selected patient's care-need tags — pre-loaded from the patient, edited
+     * here, and synced back on booking.
+     *
+     * @var list<int|string>
+     */
+    public array $bookSpecialConditionIds = [];
+
     public string $bookDate = '';
 
     public string $bookStartTime = '08:00';
@@ -71,6 +86,7 @@ class WeeklyCalendar extends Component
         if ($this->agendarPatientId !== null) {
             $this->openBooking();
             $this->bookPatientId = $this->agendarPatientId;
+            $this->loadPatientConditions();
         }
     }
 
@@ -122,6 +138,11 @@ class WeeklyCalendar extends Component
         $this->showBooking = true;
     }
 
+    public function updatedBookPatientId(): void
+    {
+        $this->loadPatientConditions();
+    }
+
     public function updatedBookProcedureId(): void
     {
         $procedure = $this->bookProcedureId !== null ? Procedure::find($this->bookProcedureId) : null;
@@ -147,6 +168,10 @@ class WeeklyCalendar extends Component
             'bookDoctorId' => ['nullable', Rule::exists('doctors', 'id')],
             'bookProcedureId' => ['nullable', Rule::exists('procedures', 'id')],
             'bookServiceType' => ['nullable', 'string', 'max:255'],
+            'bookUnit' => ['nullable', 'string', 'max:255'],
+            'bookNotes' => ['nullable', 'string', 'max:2000'],
+            'bookSpecialConditionIds' => ['array'],
+            'bookSpecialConditionIds.*' => [Rule::exists('special_conditions', 'id')],
             'bookDate' => ['required', 'date'],
             'bookStartTime' => ['required', 'string'],
             'bookEndTime' => ['required', 'string'],
@@ -160,6 +185,9 @@ class WeeklyCalendar extends Component
             doctorId: $this->bookDoctorId,
             procedureId: $this->bookProcedureId,
             serviceType: $validated['bookServiceType'] ?: null,
+            unit: $validated['bookUnit'] ?: null,
+            notes: $validated['bookNotes'] ?: null,
+            specialConditionIds: array_map('intval', $this->bookSpecialConditionIds),
         ));
 
         $this->showBooking = false;
@@ -185,7 +213,7 @@ class WeeklyCalendar extends Component
         /** @var Collection<int, Appointment> $loaded */
         $loaded = Appointment::query()
             ->visible()
-            ->with('patient')
+            ->with('patient.specialConditions')
             ->whereBetween('date', [$monday->format('Y-m-d'), $friday->format('Y-m-d')])
             ->when($this->filterDoctorIds !== [], fn ($query) => $query->whereIn('doctor_id', $this->filterDoctorIds))
             ->when($this->filterProcedureIds !== [], fn ($query) => $query->whereIn('procedure_id', $this->filterProcedureIds))
@@ -209,11 +237,15 @@ class WeeklyCalendar extends Component
             'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
             'doctors' => $this->showBooking ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'procedures' => $this->showBooking ? Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']) : collect(),
+            'specialConditions' => $this->showBooking ? SpecialCondition::active()->orderBy('name')->get(['id', 'name']) : collect(),
+            'bookingPatient' => $this->showBooking && $this->bookPatientId !== null
+                ? Patient::with('specialConditions')->find($this->bookPatientId)
+                : null,
             'filterDoctors' => $doctorIdsWithAppointments === [] ? collect() : Doctor::whereIn('id', $doctorIdsWithAppointments)->orderBy('name')->get(['id', 'name']),
             'filterProcedures' => $procedureIdsWithAppointments === [] ? collect() : Procedure::whereIn('id', $procedureIdsWithAppointments)->orderBy('name')->get(['id', 'name']),
             'canManage' => Gate::allows('manage-scheduling'),
             'detailAppointment' => $this->detailAppointmentId !== null
-                ? Appointment::with(['patient', 'doctor'])->find($this->detailAppointmentId)
+                ? Appointment::with(['patient.specialConditions', 'doctor'])->find($this->detailAppointmentId)
                 : null,
         ]);
     }
@@ -240,10 +272,24 @@ class WeeklyCalendar extends Component
     {
         $this->reset([
             'bookPatientId', 'bookDoctorId', 'bookProcedureId',
-            'bookServiceType', 'bookDate', 'bookStartTime', 'bookEndTime',
+            'bookServiceType', 'bookUnit', 'bookNotes', 'bookSpecialConditionIds',
+            'bookDate', 'bookStartTime', 'bookEndTime',
         ]);
         $this->bookStartTime = '08:00';
         $this->bookEndTime = '09:00';
+    }
+
+    /**
+     * Mirror the selected patient's current care-need tags into the form so editing
+     * doesn't silently drop the ones they already carry.
+     */
+    private function loadPatientConditions(): void
+    {
+        $patient = $this->bookPatientId !== null ? Patient::find($this->bookPatientId) : null;
+
+        $this->bookSpecialConditionIds = $patient !== null
+            ? $patient->specialConditions->pluck('id')->map(fn (int $id): string => (string) $id)->all()
+            : [];
     }
 
     /**

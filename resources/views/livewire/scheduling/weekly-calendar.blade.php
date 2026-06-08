@@ -80,7 +80,12 @@
                             @foreach ($cellAppointments as $appointment)
                                 <button type="button" wire:key="appt-{{ $appointment->id }}" wire:click="openDetail({{ $appointment->id }})"
                                     class="mb-1 block w-full cursor-pointer rounded-lg border p-2 text-left text-xs transition-shadow last:mb-0 hover:shadow-md {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
-                                    <div class="truncate font-medium">{{ $appointment->patient->name }}</div>
+                                    <div class="flex items-center gap-1">
+                                        @if ($appointment->patient->hasSpecialConditions())
+                                            <span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" title="Paciente com cuidado especial" aria-label="Paciente com cuidado especial"></span>
+                                        @endif
+                                        <span class="truncate font-medium">{{ $appointment->patient->name }}</span>
+                                    </div>
                                     <div class="mt-0.5 flex items-center justify-between gap-1">
                                         <span class="truncate opacity-80">{{ $appointment->service_type }}</span>
                                         <span class="flex-shrink-0 rounded px-1 py-0.5 text-[10px] font-medium {{ $appointment->status->badgeClasses() }}">
@@ -107,8 +112,20 @@
                 <h2 class="text-lg font-semibold text-slate-800">Novo agendamento</h2>
 
                 <form wire:submit="book" class="mt-4 space-y-4">
-                    <x-ui.combobox label="Paciente" wire:model="bookPatientId" :options="$patients"
+                    <x-ui.combobox label="Paciente" wire:model.live="bookPatientId" :options="$patients"
                         placeholder="Selecione um paciente" :error="$errors->first('bookPatientId')" />
+
+                    @if ($bookingPatient?->hasSpecialConditions())
+                        <div class="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3" role="alert">
+                            <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                            </svg>
+                            <div class="text-sm text-amber-800">
+                                <span class="font-medium">Cuidado especial:</span>
+                                {{ $bookingPatient->specialConditions->pluck('name')->join(', ') }}
+                            </div>
+                        </div>
+                    @endif
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <x-ui.combobox label="Profissional" wire:model="bookDoctorId" :options="$doctors" placeholder="— Opcional —" nullable />
@@ -116,7 +133,32 @@
                             :options="$procedures->map(fn ($procedure) => ['value' => $procedure->id, 'label' => $procedure->name.' ('.($procedure->duration ?: 60).'min)'])" />
                     </div>
 
-                    <x-ui.input label="Tipo de atendimento" wire:model="bookServiceType" placeholder="Consulta, Retorno, Exame…" />
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <x-ui.input label="Tipo de atendimento" wire:model="bookServiceType" placeholder="Consulta, Retorno, Exame…" />
+                        <x-ui.input label="Unidade" wire:model="bookUnit" placeholder="Unidade do atendimento" />
+                    </div>
+
+                    @if ($specialConditions->isNotEmpty())
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-slate-700">Cuidados especiais</label>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($specialConditions as $condition)
+                                    <label class="cursor-pointer">
+                                        <input type="checkbox" wire:model.live="bookSpecialConditionIds" value="{{ $condition->id }}" class="peer sr-only" />
+                                        <span class="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-600 transition-all peer-checked:border-amber-300 peer-checked:bg-amber-50 peer-checked:text-amber-800">
+                                            {{ $condition->name }}
+                                        </span>
+                                    </label>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    <div>
+                        <label class="mb-2 block text-sm font-medium text-slate-700">Observação do agendamento</label>
+                        <textarea wire:model="bookNotes" rows="2" placeholder="Informações operacionais ou administrativas relevantes…"
+                            class="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500/40 focus:border-teal-500 text-slate-800 placeholder-slate-400 transition-all"></textarea>
+                    </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <x-ui.date-picker label="Data" wire:model="bookDate" :error="$errors->first('bookDate')" />
@@ -149,11 +191,29 @@
                     <x-ui.badge :color="$detailAppointment->status->badgeClasses()">{{ $detailAppointment->status->label() }}</x-ui.badge>
                 </div>
 
+                @if ($detailAppointment->patient->hasSpecialConditions())
+                    <div class="mt-4 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3" role="alert">
+                        <svg class="mt-0.5 h-5 w-5 flex-shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+                        </svg>
+                        <div class="text-sm text-amber-800">
+                            <span class="font-medium">Cuidado especial:</span>
+                            {{ $detailAppointment->patient->specialConditions->pluck('name')->join(', ') }}
+                        </div>
+                    </div>
+                @endif
+
                 <dl class="mt-5 space-y-3 text-sm">
                     <div class="flex justify-between"><dt class="text-slate-400">Data</dt><dd class="text-slate-700">{{ $detailAppointment->date->format('d/m/Y') }}</dd></div>
                     <div class="flex justify-between"><dt class="text-slate-400">Horário</dt><dd class="text-slate-700">{{ $detailAppointment->start_time }} – {{ $detailAppointment->end_time }}</dd></div>
                     @if ($detailAppointment->doctor)
                         <div class="flex justify-between"><dt class="text-slate-400">Profissional</dt><dd class="text-slate-700">{{ $detailAppointment->doctor->name }}</dd></div>
+                    @endif
+                    @if ($detailAppointment->unit)
+                        <div class="flex justify-between"><dt class="text-slate-400">Unidade</dt><dd class="text-slate-700">{{ $detailAppointment->unit }}</dd></div>
+                    @endif
+                    @if ($detailAppointment->notes)
+                        <div><dt class="text-slate-400">Observação</dt><dd class="mt-1 text-slate-700">{{ $detailAppointment->notes }}</dd></div>
                     @endif
                 </dl>
 
