@@ -60,14 +60,19 @@
 
         <div class="rounded-2xl border border-slate-200 divide-y divide-slate-100 bg-white">
             @forelse ($doctors as $doctor)
+                @php($invUser = $doctorUsers[$doctor->id] ?? null)
+                @php($invStatus = $invUser?->invitationStatus() ?? \App\Enums\InvitationStatus::NotInvited)
                 <div class="flex items-start justify-between px-4 py-3" wire:key="doctor-{{ $doctor->id }}">
                     <div class="min-w-0">
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <span class="text-slate-800 {{ $doctor->active ? '' : 'text-slate-400' }}">{{ $doctor->name }}</span>
                             <span class="text-xs text-slate-400">{{ $doctor->crm }}</span>
                             @unless ($doctor->active)
                                 <span class="text-[10px] uppercase tracking-wider text-slate-400 bg-slate-100 px-2 py-0.5 rounded">Inativo</span>
                             @endunless
+                            @if ($doctor->email)
+                                <span class="text-[10px] font-medium uppercase tracking-wider px-2 py-0.5 rounded-full {{ $invStatus->badgeClasses() }}">{{ $invStatus->label() }}</span>
+                            @endif
                         </div>
                         @if ($doctor->specialties->isNotEmpty())
                             <div class="mt-1.5 flex flex-wrap gap-1.5">
@@ -78,7 +83,15 @@
                         @endif
                     </div>
                     @can('manage-clinic-settings')
-                        <div class="flex items-center gap-4 text-sm flex-shrink-0 pl-3">
+                        <div class="flex flex-wrap items-center justify-end gap-4 text-sm flex-shrink-0 pl-3">
+                            @if ($doctor->email && $invStatus !== \App\Enums\InvitationStatus::Accepted)
+                                <button wire:click="inviteDoctor({{ $doctor->id }})" class="font-medium text-teal-700 hover:text-teal-800">
+                                    {{ $invStatus === \App\Enums\InvitationStatus::NotInvited ? 'Convidar' : 'Reenviar' }}
+                                </button>
+                                @if ($invStatus !== \App\Enums\InvitationStatus::NotInvited)
+                                    <button wire:click="revokeInvitation({{ $doctor->id }})" class="text-rose-600 hover:text-rose-700">Revogar</button>
+                                @endif
+                            @endif
                             <button wire:click="edit({{ $doctor->id }})" class="text-teal-700 hover:text-teal-800">Editar</button>
                             <button wire:click="toggle({{ $doctor->id }})" class="text-slate-500 hover:text-slate-700">
                                 {{ $doctor->active ? 'Desativar' : 'Ativar' }}
