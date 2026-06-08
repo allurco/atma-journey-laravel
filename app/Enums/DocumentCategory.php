@@ -13,6 +13,8 @@ enum DocumentCategory: string
     case Exam = 'exam';
     case Report = 'report';
     case Consent = 'consent';
+    case Contract = 'contract';
+    case Questionnaire = 'questionnaire';
     case Image = 'image';
     case Other = 'other';
 
@@ -22,6 +24,8 @@ enum DocumentCategory: string
             self::Exam => 'Exame',
             self::Report => 'Laudo',
             self::Consent => 'Termo',
+            self::Contract => 'Contrato',
+            self::Questionnaire => 'Questionário',
             self::Image => 'Imagem',
             self::Other => 'Outro',
         };

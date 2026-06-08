@@ -7,6 +7,7 @@
         ['label' => 'Especialidades', 'route' => 'especialidades'],
         ['label' => 'Procedimentos', 'route' => 'procedimentos'],
         ['label' => 'Condições especiais', 'route' => 'condicoes-especiais', 'can' => 'manage-clinic-settings'],
+        ['label' => 'Modelos de documentos', 'route' => 'modelos', 'can' => 'manage-clinic-settings'],
         ['label' => 'Médicos', 'route' => 'medicos'],
         ['label' => 'Equipe', 'route' => 'equipe', 'can' => 'manage-users'],
         ['label' => 'Integrações', 'route' => 'integracoes', 'can' => 'manage-clinic-settings'],
