@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\InvitationStatus;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Laravel\Fortify\Contracts\PasskeyUser;
 use Laravel\Fortify\PasskeyAuthenticatable;
@@ -22,6 +25,9 @@ use Spatie\Permission\Traits\HasRoles;
 /**
  * @property UserRole $role
  * @property bool $active
+ * @property Carbon|null $invited_at
+ * @property string|null $invitation_token
+ * @property Carbon|null $invitation_accepted_at
  */
 #[Fillable(['name', 'email', 'password', 'role', 'active', 'doctor_id'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
@@ -53,7 +59,63 @@ class User extends Authenticatable implements PasskeyUser
             'password' => 'hashed',
             'role' => UserRole::class,
             'active' => 'boolean',
+            'invited_at' => 'datetime',
+            'invitation_accepted_at' => 'datetime',
         ];
+    }
+
+    /** How long an invitation stays valid. */
+    public const int INVITATION_TTL_DAYS = 7;
+
+    /**
+     * Issue (or reissue) an invitation token. Stores its hash and returns the
+     * plaintext for the e-mailed link.
+     */
+    public function generateInvitationToken(): string
+    {
+        $plain = Str::random(48);
+
+        $this->forceFill([
+            'invited_at' => Carbon::now(),
+            'invitation_token' => hash('sha256', $plain),
+            'invitation_accepted_at' => null,
+        ])->save();
+
+        return $plain;
+    }
+
+    public static function findByInvitationToken(string $plain): ?self
+    {
+        return static::query()->where('invitation_token', hash('sha256', $plain))->first();
+    }
+
+    public function invitationStatus(): InvitationStatus
+    {
+        return match (true) {
+            $this->invitation_accepted_at !== null => InvitationStatus::Accepted,
+            $this->invited_at === null => InvitationStatus::NotInvited,
+            $this->invited_at->addDays(self::INVITATION_TTL_DAYS)->isPast() => InvitationStatus::Expired,
+            default => InvitationStatus::Pending,
+        };
+    }
+
+    public function isInvitationPending(): bool
+    {
+        return $this->invitationStatus() === InvitationStatus::Pending;
+    }
+
+    /**
+     * Accept the invitation: set the password, activate, and burn the token.
+     */
+    public function acceptInvitation(string $password): void
+    {
+        $this->forceFill([
+            'password' => Hash::make($password),
+            'active' => true,
+            'email_verified_at' => Carbon::now(),
+            'invitation_accepted_at' => Carbon::now(),
+            'invitation_token' => null,
+        ])->save();
     }
 
     /**
