@@ -2,9 +2,12 @@
 
 declare(strict_types=1);
 
+use App\Enums\InvitationStatus;
 use App\Enums\UserRole;
 use App\Livewire\Settings\Team;
+use App\Mail\InvitationMail;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 test('an admin holds every permission and staff is limited', function () {
@@ -29,14 +32,14 @@ test('a created user is assigned the spatie role matching its column', function 
         ->and($staff->hasRole('staff'))->toBeTrue();
 });
 
-test('an admin can create a staff user who can then log in', function () {
+test('an admin invites a staff user (pending until they accept)', function () {
+    Mail::fake();
     $this->actingAs(User::factory()->admin()->create());
 
     Livewire::test(Team::class)
         ->call('create')
         ->set('name', 'Recepção')
         ->set('email', 'recepcao@clinica.test')
-        ->set('password', 'password123')
         ->set('role', UserRole::Staff->value)
         ->call('save')
         ->assertHasNoErrors();
@@ -44,17 +47,35 @@ test('an admin can create a staff user who can then log in', function () {
     $user = User::firstWhere('email', 'recepcao@clinica.test');
     expect($user)->not->toBeNull()
         ->and($user->role)->toBe(UserRole::Staff)
-        ->and($user->active)->toBeTrue()
+        ->and($user->active)->toBeFalse()
+        ->and($user->invitationStatus())->toBe(InvitationStatus::Pending)
         ->and($user->can('manage-patients'))->toBeTrue()
-        ->and($user->can('manage-users'))->toBeFalse()
-        ->and(Hash::check('password123', $user->password))->toBeTrue();
+        ->and($user->can('manage-users'))->toBeFalse();
+    Mail::assertSent(InvitationMail::class, fn (InvitationMail $mail): bool => $mail->hasTo('recepcao@clinica.test'));
+});
+
+test('the team list shows a pending invite with resend and revoke', function () {
+    Mail::fake();
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(Team::class)
+        ->call('create')->set('name', 'Nova')->set('email', 'nova@clinica.test')->set('role', 'staff')->call('save');
+    $invited = User::firstWhere('email', 'nova@clinica.test');
+
+    Livewire::test(Team::class)
+        ->assertSee('Convite enviado')
+        ->call('resendInvitation', $invited->id);
+    Mail::assertSent(InvitationMail::class, 2);
+
+    Livewire::test(Team::class)->call('revokeInvitation', $invited->id);
+    expect(User::find($invited->id))->toBeNull();
 });
 
 test('staff cannot manage the team', function () {
     $this->actingAs(User::factory()->staff()->create());
 
     Livewire::test(Team::class)
-        ->set('name', 'X')->set('email', 'x@y.test')->set('password', 'password123')
+        ->set('name', 'X')->set('email', 'x@y.test')
         ->call('save')
         ->assertForbidden();
 });
