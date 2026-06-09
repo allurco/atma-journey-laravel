@@ -31,3 +31,8 @@ yarn-error.log
 # Runtime/test tenant storage (stancl suffixes storage per tenant)
 /storage/tenant*
 .claude/worktrees/
+
+# Playwright MCP screenshots
+.playwright-mcp/
+agenda-day-*.png
+availability-*.png
