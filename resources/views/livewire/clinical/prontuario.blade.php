@@ -383,8 +383,12 @@
                                     </div>
                                 </div>
                                 @if ($canManage)
-                                    <button type="button" wire:click="markDocumentSigned({{ $document->id }})"
-                                        class="flex-shrink-0 text-xs font-medium text-emerald-600 hover:text-emerald-700">Marcar como assinada</button>
+                                    <div class="flex flex-shrink-0 items-center gap-4 text-xs font-medium">
+                                        <button type="button" wire:click="resendDocumentSignature({{ $document->id }})"
+                                            class="text-slate-500 hover:text-slate-700">Reenviar</button>
+                                        <button type="button" wire:click="markDocumentSigned({{ $document->id }})"
+                                            class="text-emerald-600 hover:text-emerald-700">Marcar como assinada</button>
+                                    </div>
                                 @endif
                             </div>
                         @endforeach

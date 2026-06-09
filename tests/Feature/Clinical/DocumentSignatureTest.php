@@ -2,15 +2,18 @@
 
 declare(strict_types=1);
 
+use App\Actions\Clinical\ResendDocumentForSignature;
 use App\Actions\Clinical\SendDocumentForSignature;
 use App\Actions\Clinical\SendDocumentForSignatureData;
 use App\Enums\SignatureStatus;
 use App\Livewire\Clinical\Prontuario;
+use App\Mail\DocumentSignatureRequestMail;
 use App\Models\Appointment;
 use App\Models\DocumentTemplate;
 use App\Models\Patient;
 use App\Models\PatientDocument;
 use App\Models\User;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
@@ -79,6 +82,64 @@ test('sending logs the dispatch on the patient timeline', function () {
     expect($event)->not->toBeNull()
         ->and($event->title)->toBe('Documento enviado para assinatura')
         ->and($event->description)->toContain('Termo de consentimento');
+});
+
+test('sending e-mails the patient the public signing link', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $patient = Patient::factory()->create(['email' => 'paciente@example.com']);
+
+    app(SendDocumentForSignature::class)(new SendDocumentForSignatureData(
+        patientId: $patient->id,
+        templateId: makeTemplate()->id,
+    ));
+
+    Mail::assertSent(DocumentSignatureRequestMail::class, fn ($mail) => $mail->hasTo('paciente@example.com'));
+});
+
+test('sending does not e-mail when the patient has no address but still creates the document', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $patient = Patient::factory()->create(['email' => null]);
+
+    $document = app(SendDocumentForSignature::class)(new SendDocumentForSignatureData(
+        patientId: $patient->id,
+        templateId: makeTemplate()->id,
+    ));
+
+    Mail::assertNothingSent();
+    expect($document->isAwaitingSignature())->toBeTrue();
+});
+
+test('resending issues a fresh token, refreshes sent_at and re-e-mails', function () {
+    Storage::fake('local');
+    $patient = Patient::factory()->create(['email' => 'paciente@example.com']);
+    $document = app(SendDocumentForSignature::class)(new SendDocumentForSignatureData(
+        patientId: $patient->id,
+        templateId: makeTemplate()->id,
+    ));
+    $originalToken = $document->signature_token;
+
+    Mail::fake();
+    app(ResendDocumentForSignature::class)($document);
+
+    Mail::assertSent(DocumentSignatureRequestMail::class, fn ($mail) => $mail->hasTo('paciente@example.com'));
+    expect($document->refresh()->signature_token)->not->toBe($originalToken)
+        ->and($document->isAwaitingSignature())->toBeTrue();
+});
+
+test('the front desk can resend a pending document from the prontuário', function () {
+    Storage::fake('local');
+    Mail::fake();
+    $this->actingAs(User::factory()->staff()->create());
+    $patient = Patient::factory()->create(['email' => 'paciente@example.com']);
+    $document = PatientDocument::factory()->for($patient)->create(['signature_status' => SignatureStatus::Pending]);
+
+    Livewire::test(Prontuario::class, ['patient' => $patient])
+        ->set('tab', 'documentos')
+        ->call('resendDocumentSignature', $document->id);
+
+    Mail::assertSent(DocumentSignatureRequestMail::class);
 });
 
 test('a document can be linked to a consulta', function () {

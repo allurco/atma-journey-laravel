@@ -7,9 +7,11 @@ use App\Http\Controllers\LeadWebhookController;
 use App\Http\Controllers\PatientDocumentController;
 use App\Http\Controllers\PatientPhotoController;
 use App\Http\Controllers\PrescriptionPdfController;
+use App\Http\Controllers\SignDocumentFileController;
 use App\Http\Middleware\VerifyWebhookSecret;
 use App\Livewire\Auth\AcceptInvitation;
 use App\Livewire\Clinical\Prontuario;
+use App\Livewire\Clinical\SignDocument;
 use App\Livewire\Dashboard;
 use App\Livewire\Doctor\Dashboard as DoctorDashboard;
 use App\Livewire\Financial\Budgets;
@@ -73,6 +75,12 @@ Route::middleware([
     // Invitation acceptance — public (the invitee has no account yet), authenticated
     // by the token in the URL; resolved to the tenant by domain.
     Route::get('convite/{token}', AcceptInvitation::class)->name('convite');
+
+    // Public document signing — no session; authenticated by the single-use token in
+    // the URL, resolved to the tenant by domain. The patient reviews the document
+    // (served via the token) and signs with one click.
+    Route::get('documentos/assinar/{token}', SignDocument::class)->name('documentos.assinar');
+    Route::get('documentos/assinar/{token}/arquivo', SignDocumentFileController::class)->name('documentos.assinar.arquivo');
 
     // Inbound lead webhook — no session auth; authenticated by the per-clinic
     // secret, resolved to the tenant by domain. CSRF-exempt (see bootstrap/app.php).
