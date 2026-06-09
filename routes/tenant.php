@@ -18,6 +18,7 @@ use App\Livewire\Financial\Budgets;
 use App\Livewire\Patients\Index as PatientsIndex;
 use App\Livewire\Patients\Show as PatientsShow;
 use App\Livewire\Pipeline\Board as PipelineBoard;
+use App\Livewire\Scheduling\Waitlist;
 use App\Livewire\Scheduling\WeeklyCalendar;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
@@ -56,6 +57,8 @@ Route::middleware([
             Route::get('financeiro', Budgets::class)->name('financeiro');
             Route::get('pipeline', PipelineBoard::class)->name('pipeline');
             Route::get('pacientes', PatientsIndex::class)->name('pacientes.index');
+            // Fila de espera — front-desk demand management (doctors stay on their clinical surface).
+            Route::get('fila', Waitlist::class)->name('fila');
         });
         // The Prontuário (clinical record) is opened from a patient — a distinct surface
         // from the Pacientes registry. Manageable by admin and staff (clinical work).

@@ -5,6 +5,7 @@
     $navItems = [
         ['label' => 'Dashboard', 'icon' => 'home', 'route' => 'dashboard', 'can' => 'manage-financial'],
         ['label' => 'Agenda', 'icon' => 'calendar-days', 'route' => 'agenda', 'can' => 'manage-scheduling'],
+        ['label' => 'Fila de espera', 'icon' => 'queue-list', 'route' => 'fila', 'can' => 'manage-scheduling'],
         ['label' => 'Pipeline', 'icon' => 'view-columns', 'route' => 'pipeline', 'can' => 'manage-pipeline'],
         ['label' => 'Pacientes', 'icon' => 'users', 'route' => 'pacientes.index', 'can' => 'manage-patients'],
         ['label' => 'Financeiro', 'icon' => 'banknotes', 'route' => 'financeiro', 'can' => 'manage-financial'],
