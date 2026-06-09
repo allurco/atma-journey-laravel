@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace App\Livewire\Scheduling;
 
+use App\Actions\Scheduling\CallWaitlistEntry;
+use App\Actions\Scheduling\CancelWaitlistEntry;
 use App\Actions\Scheduling\CreateWaitlistEntry;
 use App\Actions\Scheduling\CreateWaitlistEntryData;
+use App\Actions\Scheduling\LogWaitlistContact;
+use App\Actions\Scheduling\LogWaitlistContactData;
+use App\Enums\ContactType;
 use App\Enums\WaitlistPeriod;
 use App\Enums\WaitlistPriority;
 use App\Enums\WaitlistStatus;
@@ -60,6 +65,61 @@ class Waitlist extends Component
     public string $formPeriod = 'qualquer';
 
     public string $formNotes = '';
+
+    /** The entry whose contact history is open in the modal. */
+    public ?int $contactsEntryId = null;
+
+    public string $contactChannel = 'whatsapp';
+
+    public string $contactNote = '';
+
+    public function callEntry(CallWaitlistEntry $callWaitlistEntry, int $entryId): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $callWaitlistEntry(WaitlistEntry::findOrFail($entryId));
+    }
+
+    public function cancelEntry(CancelWaitlistEntry $cancelWaitlistEntry, int $entryId): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $cancelWaitlistEntry(WaitlistEntry::findOrFail($entryId));
+    }
+
+    public function openContacts(int $entryId): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $this->contactsEntryId = $entryId;
+        $this->reset(['contactNote']);
+        $this->contactChannel = 'whatsapp';
+        $this->resetErrorBag();
+    }
+
+    public function closeContacts(): void
+    {
+        $this->reset(['contactsEntryId', 'contactNote']);
+    }
+
+    public function addContact(LogWaitlistContact $logWaitlistContact): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $validated = $this->validate([
+            'contactsEntryId' => ['required', Rule::exists('waitlist_entries', 'id')],
+            'contactChannel' => ['required', Rule::enum(ContactType::class)],
+            'contactNote' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $logWaitlistContact(new LogWaitlistContactData(
+            waitlistEntryId: (int) $validated['contactsEntryId'],
+            channel: ContactType::from($validated['contactChannel']),
+            note: $validated['contactNote'] ?: null,
+        ));
+
+        $this->reset(['contactNote']);
+    }
 
     public function updatedSearch(): void
     {
@@ -171,6 +231,10 @@ class Waitlist extends Component
             'priorities' => WaitlistPriority::cases(),
             'periods' => WaitlistPeriod::cases(),
             'statuses' => WaitlistStatus::cases(),
+            'channels' => ContactType::cases(),
+            'contactsEntry' => $this->contactsEntryId !== null
+                ? WaitlistEntry::with(['patient', 'contacts.user'])->find($this->contactsEntryId)
+                : null,
         ]);
     }
 

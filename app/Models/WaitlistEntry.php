@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A patient waiting for a slot that isn't available yet — the demand layer that
@@ -75,6 +76,16 @@ class WaitlistEntry extends Model
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class);
+    }
+
+    /**
+     * The chase history — contact attempts with the waiting patient, newest first.
+     *
+     * @return HasMany<WaitlistContact, $this>
+     */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(WaitlistContact::class)->latest('contacted_at')->latest('id');
     }
 
     /**
