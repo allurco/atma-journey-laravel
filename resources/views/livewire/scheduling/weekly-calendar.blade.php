@@ -149,9 +149,9 @@
     @if ($view === 'day')
         <div class="flex items-start gap-4">
         <div class="min-w-0 flex-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-            <div class="min-w-[900px]">
+            <div class="min-w-[1720px]">
                 {{-- Header: hour ruler --}}
-                <div class="grid grid-cols-[180px_repeat(11,minmax(64px,1fr))] border-b border-slate-200">
+                <div class="grid grid-cols-[180px_repeat(11,minmax(140px,1fr))] border-b border-slate-200">
                     <div class="px-3 py-3 text-xs font-medium uppercase tracking-wider text-slate-400">Médico</div>
                     @foreach ($timeSlots as $slot)
                         <div class="border-l border-slate-100 px-1 py-3 text-center text-xs text-slate-400">{{ $slot }}</div>
@@ -160,7 +160,7 @@
 
                 {{-- Lanes --}}
                 @forelse ($dayLanes as $lane)
-                    <div class="grid grid-cols-[180px_repeat(11,minmax(64px,1fr))] border-b border-slate-100 last:border-b-0" wire:key="lane-{{ $lane['doctor']->id }}">
+                    <div class="grid grid-cols-[180px_repeat(11,minmax(140px,1fr))] border-b border-slate-100 last:border-b-0" wire:key="lane-{{ $lane['doctor']->id }}">
                         <div class="px-3 py-2">
                             <div class="text-sm font-medium text-slate-700">{{ $lane['doctor']->name }}</div>
                             <div class="mt-1 flex flex-wrap gap-1">
