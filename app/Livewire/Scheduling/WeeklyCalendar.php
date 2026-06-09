@@ -8,11 +8,14 @@ use App\Actions\Scheduling\ScheduleAppointment;
 use App\Actions\Scheduling\ScheduleAppointmentData;
 use App\Actions\Scheduling\TransitionAppointment;
 use App\Enums\AppointmentStatus;
+use App\Exceptions\SchedulingConflictException;
 use App\Models\Appointment;
 use App\Models\Doctor;
+use App\Models\DoctorShift;
 use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\SpecialCondition;
+use App\Models\Specialty;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -77,10 +80,33 @@ class WeeklyCalendar extends Component
 
     public string $bookEndTime = '09:00';
 
+    /** Active calendar view: 'day' (resource lanes, default) or 'week' (the grid). */
+    #[Url]
+    public string $view = 'day';
+
+    /** The day (Y-m-d) shown in the resource day view. */
+    #[Url]
+    public string $dayDate = '';
+
+    /** Day view: narrow the doctor lanes to one specialty. Null = all. */
+    public ?int $filterSpecialtyId = null;
+
+    public bool $showShiftForm = false;
+
+    public ?int $shiftDoctorId = null;
+
+    public string $shiftStartTime = '08:00';
+
+    public string $shiftEndTime = '12:00';
+
     public function mount(): void
     {
         if ($this->weekStart === '') {
             $this->weekStart = Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        }
+
+        if ($this->dayDate === '') {
+            $this->dayDate = Carbon::now()->format('Y-m-d');
         }
 
         if ($this->agendarPatientId !== null) {
@@ -103,6 +129,75 @@ class WeeklyCalendar extends Component
     public function today(): void
     {
         $this->weekStart = Carbon::now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        $this->dayDate = Carbon::now()->format('Y-m-d');
+    }
+
+    public function showWeek(): void
+    {
+        $this->view = 'week';
+    }
+
+    public function showDay(): void
+    {
+        $this->view = 'day';
+    }
+
+    public function previousDay(): void
+    {
+        $this->dayDate = Carbon::parse($this->dayDate)->subDay()->format('Y-m-d');
+    }
+
+    public function nextDay(): void
+    {
+        $this->dayDate = Carbon::parse($this->dayDate)->addDay()->format('Y-m-d');
+    }
+
+    public function openShiftForm(?int $doctorId = null): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $this->reset(['shiftDoctorId', 'shiftStartTime', 'shiftEndTime']);
+        $this->resetErrorBag(['shiftDoctorId', 'shiftStartTime', 'shiftEndTime']);
+        $this->shiftDoctorId = $doctorId;
+        $this->shiftStartTime = '08:00';
+        $this->shiftEndTime = '12:00';
+        $this->showShiftForm = true;
+    }
+
+    public function saveShift(): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $validated = $this->validate([
+            'shiftDoctorId' => ['required', Rule::exists('doctors', 'id')],
+            'shiftStartTime' => ['required', 'string'],
+            'shiftEndTime' => ['required', 'string', 'after:shiftStartTime'],
+        ], [
+            'shiftEndTime.after' => 'O fim deve ser depois do início.',
+        ]);
+
+        DoctorShift::create([
+            'doctor_id' => (int) $validated['shiftDoctorId'],
+            'date' => $this->dayDate,
+            'start_time' => $validated['shiftStartTime'],
+            'end_time' => $validated['shiftEndTime'],
+        ]);
+
+        $this->showShiftForm = false;
+        $this->reset(['shiftDoctorId', 'shiftStartTime', 'shiftEndTime']);
+    }
+
+    public function cancelShiftForm(): void
+    {
+        $this->showShiftForm = false;
+        $this->reset(['shiftDoctorId', 'shiftStartTime', 'shiftEndTime']);
+    }
+
+    public function removeShift(int $shiftId): void
+    {
+        $this->authorize('manage-scheduling');
+
+        DoctorShift::whereKey($shiftId)->delete();
     }
 
     public function openDetail(int $appointmentId): void
@@ -127,7 +222,7 @@ class WeeklyCalendar extends Component
         $this->detailAppointmentId = null;
     }
 
-    public function openBooking(?string $date = null, ?string $time = null): void
+    public function openBooking(?string $date = null, ?string $time = null, ?int $doctorId = null): void
     {
         $this->authorize('manage-scheduling');
 
@@ -135,6 +230,7 @@ class WeeklyCalendar extends Component
         $this->bookDate = $date ?? $this->monday()->format('Y-m-d');
         $this->bookStartTime = $time ?? '08:00';
         $this->bookEndTime = $this->computeEndTime($this->bookStartTime, $this->procedureDuration());
+        $this->bookDoctorId = $doctorId;
         $this->showBooking = true;
     }
 
@@ -177,18 +273,26 @@ class WeeklyCalendar extends Component
             'bookEndTime' => ['required', 'string'],
         ]);
 
-        app(ScheduleAppointment::class)(new ScheduleAppointmentData(
-            patientId: (int) $validated['bookPatientId'],
-            date: $validated['bookDate'],
-            startTime: $validated['bookStartTime'],
-            endTime: $validated['bookEndTime'],
-            doctorId: $this->bookDoctorId,
-            procedureId: $this->bookProcedureId,
-            serviceType: $validated['bookServiceType'] ?: null,
-            unit: $validated['bookUnit'] ?: null,
-            notes: $validated['bookNotes'] ?: null,
-            specialConditionIds: array_map('intval', $this->bookSpecialConditionIds),
-        ));
+        try {
+            app(ScheduleAppointment::class)(new ScheduleAppointmentData(
+                patientId: (int) $validated['bookPatientId'],
+                date: $validated['bookDate'],
+                startTime: $validated['bookStartTime'],
+                endTime: $validated['bookEndTime'],
+                doctorId: $this->bookDoctorId,
+                procedureId: $this->bookProcedureId,
+                serviceType: $validated['bookServiceType'] ?: null,
+                unit: $validated['bookUnit'] ?: null,
+                notes: $validated['bookNotes'] ?: null,
+                specialConditionIds: array_map('intval', $this->bookSpecialConditionIds),
+            ));
+        } catch (SchedulingConflictException $e) {
+            // The doctor's availability gate refused this slot — surface it on the
+            // time field and keep the form open so the user can adjust.
+            $this->addError('bookStartTime', $e->getMessage());
+
+            return;
+        }
 
         $this->showBooking = false;
         $this->resetBooking();
@@ -217,6 +321,10 @@ class WeeklyCalendar extends Component
             ->whereBetween('date', [$monday->format('Y-m-d'), $friday->format('Y-m-d')])
             ->when($this->filterDoctorIds !== [], fn ($query) => $query->whereIn('doctor_id', $this->filterDoctorIds))
             ->when($this->filterProcedureIds !== [], fn ($query) => $query->whereIn('procedure_id', $this->filterProcedureIds))
+            ->when($this->filterSpecialtyId !== null, fn ($query) => $query->whereHas(
+                'doctor.specialties',
+                fn ($specialties) => $specialties->whereKey($this->filterSpecialtyId),
+            ))
             ->get();
 
         // Smart filter options — only doctors/procedures that actually have appointments.
@@ -229,11 +337,17 @@ class WeeklyCalendar extends Component
 
         $weekDays = collect(range(0, 4))->map(fn (int $offset): Carbon => $monday->copy()->addDays($offset));
 
+        $day = Carbon::parse($this->dayDate);
+
         return view('livewire.scheduling.weekly-calendar', [
             'weekDays' => $weekDays,
             'timeSlots' => $this->timeSlots(),
             'appointments' => $appointments,
             'weekLabel' => $monday->format('d/m').' – '.$friday->format('d/m/Y'),
+            'dayLabel' => $day->locale('pt_BR')->isoFormat('dddd, D [de] MMMM'),
+            'dayLanes' => $this->view === 'day' ? $this->dayLanes() : collect(),
+            'specialties' => Specialty::where('active', true)->orderBy('name')->get(['id', 'name']),
+            'shiftDoctors' => $this->showShiftForm ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
             'doctors' => $this->showBooking ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'procedures' => $this->showBooking ? Procedure::where('active', true)->orderBy('name')->get(['id', 'name', 'duration']) : collect(),
@@ -248,6 +362,72 @@ class WeeklyCalendar extends Component
                 ? Appointment::with(['patient.specialConditions', 'doctor'])->find($this->detailAppointmentId)
                 : null,
         ]);
+    }
+
+    /**
+     * The resource day view's lanes: one per active doctor (optionally narrowed to a
+     * specialty), each carrying their dated shifts and, per hourly slot, whether it
+     * sits inside a shift (bookable) and which appointments fill it.
+     *
+     * @return Collection<int, array{doctor: Doctor, shifts: Collection<int, DoctorShift>, slots: array<string, array{inShift: bool, appointments: Collection<int, Appointment>}>}>
+     */
+    private function dayLanes(): Collection
+    {
+        $doctors = Doctor::query()
+            ->where('active', true)
+            ->when($this->filterSpecialtyId !== null, fn ($query) => $query->whereHas(
+                'specialties',
+                fn ($specialties) => $specialties->whereKey($this->filterSpecialtyId),
+            ))
+            ->orderBy('name')
+            ->get();
+
+        $shifts = DoctorShift::query()
+            ->where('date', $this->dayDate)
+            ->get()
+            ->groupBy('doctor_id');
+
+        $appointments = Appointment::query()
+            ->visible()
+            ->with('patient.specialConditions')
+            ->where('date', $this->dayDate)
+            ->whereNotNull('doctor_id')
+            ->get()
+            ->groupBy('doctor_id');
+
+        return $doctors->map(function (Doctor $doctor) use ($shifts, $appointments): array {
+            /** @var Collection<int, DoctorShift> $doctorShifts */
+            $doctorShifts = $shifts->get($doctor->id, collect());
+            /** @var Collection<int, Appointment> $doctorAppointments */
+            $doctorAppointments = $appointments->get($doctor->id, collect());
+
+            $slots = [];
+
+            foreach ($this->timeSlots() as $slot) {
+                $slotStart = $this->toMinutes($slot);
+                $slotEnd = $slotStart + 60;
+
+                $slots[$slot] = [
+                    'inShift' => $doctorShifts->contains(
+                        fn (DoctorShift $shift): bool => $this->toMinutes($shift->start_time) <= $slotStart
+                            && $slotEnd <= $this->toMinutes($shift->end_time),
+                    ),
+                    'appointments' => $doctorAppointments->filter(
+                        fn (Appointment $appointment): bool => $this->toMinutes($appointment->start_time) >= $slotStart
+                            && $this->toMinutes($appointment->start_time) < $slotEnd,
+                    )->values(),
+                ];
+            }
+
+            return ['doctor' => $doctor, 'shifts' => $doctorShifts, 'slots' => $slots];
+        });
+    }
+
+    private function toMinutes(string $clock): int
+    {
+        [$hours, $minutes] = array_map('intval', explode(':', $clock));
+
+        return ($hours * 60) + $minutes;
     }
 
     private function monday(): Carbon

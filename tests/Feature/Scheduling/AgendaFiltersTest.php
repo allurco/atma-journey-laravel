@@ -23,6 +23,7 @@ test('the agenda can be filtered by one or more doctors', function () {
     Appointment::factory()->for(Patient::factory()->create(['name' => 'Paciente Beta']))->create(['doctor_id' => $bruno->id, 'date' => $this->monday]);
 
     Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
         ->assertSee('Paciente Alpha')
         ->assertSee('Paciente Beta')
         ->set('filterDoctorIds', [$alice->id])
@@ -37,6 +38,7 @@ test('the agenda can be filtered by procedure', function () {
     Appointment::factory()->for(Patient::factory()->create(['name' => 'Paciente Delta']))->create(['procedure_id' => $clareamento->id, 'date' => $this->monday]);
 
     Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
         ->set('filterProcedureIds', [$limpeza->id])
         ->assertSee('Paciente Gamma')
         ->assertDontSee('Paciente Delta');
@@ -48,6 +50,7 @@ test('only doctors with appointments are offered as filter options', function ()
     Appointment::factory()->for(Patient::factory())->create(['doctor_id' => $busy->id, 'date' => $this->monday]);
 
     Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
         ->assertSee('Dra. Ocupada')
         ->assertDontSee('Dr. Ocioso');
 });

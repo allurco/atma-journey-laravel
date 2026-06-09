@@ -10,18 +10,57 @@
     <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
             <h1 class="text-2xl font-semibold text-slate-800">Agenda</h1>
-            <p class="text-sm text-slate-500">{{ $weekLabel }}</p>
+            <p class="text-sm capitalize text-slate-500">{{ $view === 'week' ? $weekLabel : $dayLabel }}</p>
         </div>
-        <div class="flex items-center gap-2">
-            <x-ui.button variant="secondary" type="button" wire:click="previousWeek">&larr; Semana anterior</x-ui.button>
-            <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
-            <x-ui.button variant="secondary" type="button" wire:click="nextWeek">Próxima semana &rarr;</x-ui.button>
+        <div class="flex flex-wrap items-center gap-2">
+            <div class="inline-flex rounded-xl border border-slate-200 bg-white p-0.5">
+                <button type="button" wire:click="showWeek" @class([
+                    'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                    'bg-teal-50 text-teal-700' => $view === 'week',
+                    'text-slate-500 hover:text-slate-700' => $view !== 'week',
+                ])>Semana</button>
+                <button type="button" wire:click="showDay" @class([
+                    'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors',
+                    'bg-teal-50 text-teal-700' => $view === 'day',
+                    'text-slate-500 hover:text-slate-700' => $view !== 'day',
+                ])>Dia</button>
+            </div>
+
+            @if ($view === 'week')
+                <x-ui.button variant="secondary" type="button" wire:click="previousWeek">&larr; Semana anterior</x-ui.button>
+                <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
+                <x-ui.button variant="secondary" type="button" wire:click="nextWeek">Próxima semana &rarr;</x-ui.button>
+            @else
+                <x-ui.button variant="secondary" type="button" wire:click="previousDay" aria-label="Dia anterior">&larr;</x-ui.button>
+                <div class="w-40"><x-ui.date-picker wire:model.live="dayDate" /></div>
+                <x-ui.button variant="secondary" type="button" wire:click="nextDay" aria-label="Próximo dia">&rarr;</x-ui.button>
+                <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
+            @endif
+
             @if ($canManage)
                 <x-ui.button type="button" wire:click="openBooking">+ Novo agendamento</x-ui.button>
             @endif
         </div>
     </div>
 
+    {{-- Global filter: specialty narrows both the day lanes and the week grid. --}}
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+        <div class="w-full max-w-xs">
+            <x-ui.combobox wire:model.live="filterSpecialtyId" :options="$specialties" nullable
+                placeholder="Todas as especialidades" search-placeholder="Buscar especialidade…" />
+        </div>
+        @if ($view === 'day' && $canManage)
+            <x-ui.button variant="secondary" type="button" wire:click="openShiftForm">+ Disponibilidade</x-ui.button>
+        @endif
+        @if ($view === 'day')
+            <div class="ml-auto flex items-center gap-3 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-teal-100 ring-1 ring-inset ring-teal-200"></span> Disponível</span>
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-100"></span> Fora do horário</span>
+            </div>
+        @endif
+    </div>
+
+    @if ($view === 'week')
     @if ($filterDoctors->isNotEmpty() || $filterProcedures->isNotEmpty())
         <div class="mb-4 flex flex-wrap items-start gap-x-8 gap-y-3 rounded-2xl border border-slate-200 bg-white px-4 py-3">
             @if ($filterDoctors->isNotEmpty())
@@ -103,6 +142,99 @@
             @endforeach
         </div>
     </div>
+    @endif
+
+    {{-- Day view: resource timeline (doctor lanes × hours) --}}
+    @if ($view === 'day')
+        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+            <div class="min-w-[900px]">
+                {{-- Header: hour ruler --}}
+                <div class="grid grid-cols-[180px_repeat(11,minmax(64px,1fr))] border-b border-slate-200">
+                    <div class="px-3 py-3 text-xs font-medium uppercase tracking-wider text-slate-400">Médico</div>
+                    @foreach ($timeSlots as $slot)
+                        <div class="border-l border-slate-100 px-1 py-3 text-center text-xs text-slate-400">{{ $slot }}</div>
+                    @endforeach
+                </div>
+
+                {{-- Lanes --}}
+                @forelse ($dayLanes as $lane)
+                    <div class="grid grid-cols-[180px_repeat(11,minmax(64px,1fr))] border-b border-slate-100 last:border-b-0" wire:key="lane-{{ $lane['doctor']->id }}">
+                        <div class="px-3 py-2">
+                            <div class="text-sm font-medium text-slate-700">{{ $lane['doctor']->name }}</div>
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                @foreach ($lane['shifts'] as $shift)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-teal-600 px-2 py-0.5 text-[11px] font-medium text-white" wire:key="shift-{{ $shift->id }}">
+                                        {{ $shift->start_time }}–{{ $shift->end_time }}
+                                        @if ($canManage)
+                                            <button type="button" wire:click="removeShift({{ $shift->id }})" class="text-teal-100 transition-colors hover:text-white" title="Remover disponibilidade" aria-label="Remover disponibilidade">&times;</button>
+                                        @endif
+                                    </span>
+                                @endforeach
+                                @if ($canManage)
+                                    <button type="button" wire:click="openShiftForm({{ $lane['doctor']->id }})"
+                                        class="rounded-full border border-dashed border-slate-300 px-2 py-0.5 text-[11px] text-slate-400 transition-colors hover:border-teal-300 hover:text-teal-600">+ disp.</button>
+                                @endif
+                            </div>
+                        </div>
+
+                        @foreach ($timeSlots as $slot)
+                            @php($cell = $lane['slots'][$slot])
+                            <div @class([
+                                'min-h-[56px] border-l border-slate-100 p-1',
+                                'bg-slate-100' => ! $cell['inShift'] && $cell['appointments']->isEmpty(),
+                                'bg-teal-100/80 ring-1 ring-inset ring-teal-200' => $cell['inShift'] && $cell['appointments']->isEmpty(),
+                                'group cursor-pointer transition-colors hover:bg-teal-200' => $canManage && $cell['inShift'] && $cell['appointments']->isEmpty(),
+                            ])
+                                @if ($canManage && $cell['inShift'] && $cell['appointments']->isEmpty()) wire:click="openBooking('{{ $dayDate }}', '{{ $slot }}', {{ $lane['doctor']->id }})" @endif>
+                                @foreach ($cell['appointments'] as $appointment)
+                                    <button type="button" wire:key="dappt-{{ $appointment->id }}" wire:click="openDetail({{ $appointment->id }})"
+                                        class="mb-1 block w-full cursor-pointer rounded-lg border p-1.5 text-left text-[11px] transition-shadow last:mb-0 hover:shadow-md {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
+                                        <div class="flex items-center gap-1">
+                                            @if ($appointment->patient->hasSpecialConditions())
+                                                <span class="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" title="Paciente com cuidado especial" aria-label="Paciente com cuidado especial"></span>
+                                            @endif
+                                            <span class="truncate font-medium">{{ $appointment->patient->name }}</span>
+                                        </div>
+                                        <span class="truncate opacity-80">{{ $appointment->start_time }}</span>
+                                    </button>
+                                @endforeach
+                                @if ($canManage && $cell['inShift'] && $cell['appointments']->isEmpty())
+                                    <span class="hidden h-full w-full items-center justify-center text-slate-300 group-hover:flex">+</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @empty
+                    <div class="px-4 py-12 text-center text-sm text-slate-400">Nenhum médico para exibir nesta especialidade.</div>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
+    {{-- Availability (shift) form --}}
+    @if ($showShiftForm)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" wire:key="shift-form">
+            <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <h2 class="text-lg font-semibold text-slate-800">Nova disponibilidade</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ \Illuminate\Support\Carbon::parse($dayDate)->locale('pt_BR')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}</p>
+
+                <form wire:submit="saveShift" class="mt-4 space-y-4">
+                    <x-ui.combobox label="Profissional" wire:model="shiftDoctorId" :options="$shiftDoctors"
+                        placeholder="Selecione um profissional" :error="$errors->first('shiftDoctorId')" />
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <x-ui.time-select label="Início" wire:model="shiftStartTime" :error="$errors->first('shiftStartTime')" />
+                        <x-ui.time-select label="Fim" wire:model="shiftEndTime" :error="$errors->first('shiftEndTime')" />
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <x-ui.button variant="secondary" type="button" wire:click="cancelShiftForm">Cancelar</x-ui.button>
+                        <x-ui.button type="submit">Salvar disponibilidade</x-ui.button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
 
     {{-- Booking modal --}}
     @if ($showBooking)

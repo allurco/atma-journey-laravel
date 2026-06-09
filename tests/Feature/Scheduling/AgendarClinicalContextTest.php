@@ -150,6 +150,7 @@ test('the agenda grid marks appointments whose patient has a special condition',
     ]);
 
     Livewire::test(WeeklyCalendar::class, ['weekStart' => clinicalMonday()])
+        ->set('view', 'week')
         ->assertSee('Paciente com cuidado especial');
 });
 
