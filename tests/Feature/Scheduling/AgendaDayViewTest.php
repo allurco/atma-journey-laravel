@@ -21,13 +21,49 @@ beforeEach(function () {
     $this->actingAs(User::factory()->staff()->create());
 });
 
-test('the agenda defaults to the week view and can switch to the day view', function () {
+test('the agenda defaults to the day view and can switch to the week view', function () {
     Livewire::test(WeeklyCalendar::class)
-        ->assertSet('view', 'week')
-        ->call('showDay')
         ->assertSet('view', 'day')
         ->call('showWeek')
-        ->assertSet('view', 'week');
+        ->assertSet('view', 'week')
+        ->call('showDay')
+        ->assertSet('view', 'day');
+});
+
+test('choosing a date navigates the day view to that day', function () {
+    $ana = Doctor::factory()->create(['name' => 'Dra. Ana']);
+    DoctorShift::factory()->for($ana)->create(['date' => agendaDay(), 'start_time' => '08:00', 'end_time' => '12:00']);
+    $patient = Patient::factory()->create(['name' => 'Paciente Dia']);
+    Appointment::factory()->for($patient)->create([
+        'doctor_id' => $ana->id, 'date' => agendaDay(), 'start_time' => '09:00', 'end_time' => '10:00',
+    ]);
+
+    Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'day')
+        ->set('dayDate', Carbon::parse(agendaDay())->addDay()->format('Y-m-d'))
+        ->assertDontSee('Paciente Dia')
+        ->set('dayDate', agendaDay())
+        ->assertSee('Paciente Dia');
+});
+
+test('the specialty filter narrows the week view to that specialty', function () {
+    $fisio = Specialty::factory()->create(['name' => 'Fisioterapia']);
+    $ana = Doctor::factory()->create(['name' => 'Dra. Ana']);
+    $ana->specialties()->attach($fisio);
+    $bruno = Doctor::factory()->create(['name' => 'Dr. Bruno']);
+    $anaPatient = Patient::factory()->create(['name' => 'Paciente Ana']);
+    $brunoPatient = Patient::factory()->create(['name' => 'Paciente Bruno']);
+    DoctorShift::factory()->for($ana)->create(['date' => agendaDay(), 'start_time' => '08:00', 'end_time' => '12:00']);
+    DoctorShift::factory()->for($bruno)->create(['date' => agendaDay(), 'start_time' => '08:00', 'end_time' => '12:00']);
+    Appointment::factory()->for($anaPatient)->create(['doctor_id' => $ana->id, 'date' => agendaDay(), 'start_time' => '09:00', 'end_time' => '10:00']);
+    Appointment::factory()->for($brunoPatient)->create(['doctor_id' => $bruno->id, 'date' => agendaDay(), 'start_time' => '10:00', 'end_time' => '11:00']);
+
+    Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
+        ->set('weekStart', Carbon::parse(agendaDay())->startOfWeek(Carbon::MONDAY)->format('Y-m-d'))
+        ->set('filterSpecialtyId', $fisio->id)
+        ->assertSee('Paciente Ana')
+        ->assertDontSee('Paciente Bruno');
 });
 
 test('the day view lists active doctors as lanes', function () {

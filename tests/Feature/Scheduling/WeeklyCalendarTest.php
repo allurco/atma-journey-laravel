@@ -25,7 +25,7 @@ test('the calendar shows appointments for the current week', function () {
         'service_type' => 'Consulta',
     ]);
 
-    $this->get(route('agenda'))
+    $this->get(route('agenda', ['view' => 'week']))
         ->assertOk()
         ->assertSee('Joana Agenda')
         ->assertSee('Consulta');
@@ -39,6 +39,7 @@ test('week navigation moves to the next week', function () {
     ]);
 
     Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
         ->assertDontSee('Semana Que Vem')
         ->call('nextWeek')
         ->assertSee('Semana Que Vem')

@@ -80,9 +80,9 @@ class WeeklyCalendar extends Component
 
     public string $bookEndTime = '09:00';
 
-    /** Active calendar view: 'week' (the legacy grid) or 'day' (resource lanes). */
+    /** Active calendar view: 'day' (resource lanes, default) or 'week' (the grid). */
     #[Url]
-    public string $view = 'week';
+    public string $view = 'day';
 
     /** The day (Y-m-d) shown in the resource day view. */
     #[Url]
@@ -321,6 +321,10 @@ class WeeklyCalendar extends Component
             ->whereBetween('date', [$monday->format('Y-m-d'), $friday->format('Y-m-d')])
             ->when($this->filterDoctorIds !== [], fn ($query) => $query->whereIn('doctor_id', $this->filterDoctorIds))
             ->when($this->filterProcedureIds !== [], fn ($query) => $query->whereIn('procedure_id', $this->filterProcedureIds))
+            ->when($this->filterSpecialtyId !== null, fn ($query) => $query->whereHas(
+                'doctor.specialties',
+                fn ($specialties) => $specialties->whereKey($this->filterSpecialtyId),
+            ))
             ->get();
 
         // Smart filter options — only doctors/procedures that actually have appointments.
@@ -342,7 +346,7 @@ class WeeklyCalendar extends Component
             'weekLabel' => $monday->format('d/m').' – '.$friday->format('d/m/Y'),
             'dayLabel' => $day->locale('pt_BR')->isoFormat('dddd, D [de] MMMM'),
             'dayLanes' => $this->view === 'day' ? $this->dayLanes() : collect(),
-            'specialties' => $this->view === 'day' ? Specialty::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
+            'specialties' => Specialty::where('active', true)->orderBy('name')->get(['id', 'name']),
             'shiftDoctors' => $this->showShiftForm ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
             'doctors' => $this->showBooking ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),

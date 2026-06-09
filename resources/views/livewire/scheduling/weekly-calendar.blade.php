@@ -31,15 +31,33 @@
                 <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
                 <x-ui.button variant="secondary" type="button" wire:click="nextWeek">Próxima semana &rarr;</x-ui.button>
             @else
-                <x-ui.button variant="secondary" type="button" wire:click="previousDay">&larr; Dia anterior</x-ui.button>
+                <x-ui.button variant="secondary" type="button" wire:click="previousDay" aria-label="Dia anterior">&larr;</x-ui.button>
+                <div class="w-40"><x-ui.date-picker wire:model.live="dayDate" /></div>
+                <x-ui.button variant="secondary" type="button" wire:click="nextDay" aria-label="Próximo dia">&rarr;</x-ui.button>
                 <x-ui.button variant="secondary" type="button" wire:click="today">Hoje</x-ui.button>
-                <x-ui.button variant="secondary" type="button" wire:click="nextDay">Próximo dia &rarr;</x-ui.button>
             @endif
 
             @if ($canManage)
                 <x-ui.button type="button" wire:click="openBooking">+ Novo agendamento</x-ui.button>
             @endif
         </div>
+    </div>
+
+    {{-- Global filter: specialty narrows both the day lanes and the week grid. --}}
+    <div class="mb-4 flex flex-wrap items-center gap-3">
+        <div class="w-full max-w-xs">
+            <x-ui.combobox wire:model.live="filterSpecialtyId" :options="$specialties" nullable
+                placeholder="Todas as especialidades" search-placeholder="Buscar especialidade…" />
+        </div>
+        @if ($view === 'day' && $canManage)
+            <x-ui.button variant="secondary" type="button" wire:click="openShiftForm">+ Disponibilidade</x-ui.button>
+        @endif
+        @if ($view === 'day')
+            <div class="ml-auto flex items-center gap-3 text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-teal-100 ring-1 ring-inset ring-teal-200"></span> Disponível</span>
+                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-100"></span> Fora do horário</span>
+            </div>
+        @endif
     </div>
 
     @if ($view === 'week')
@@ -128,20 +146,6 @@
 
     {{-- Day view: resource timeline (doctor lanes × hours) --}}
     @if ($view === 'day')
-        <div class="mb-4 flex flex-wrap items-center gap-3">
-            <div class="w-full max-w-xs">
-                <x-ui.combobox wire:model.live="filterSpecialtyId" :options="$specialties" nullable
-                    placeholder="Todas as especialidades" search-placeholder="Buscar especialidade…" />
-            </div>
-            @if ($canManage)
-                <x-ui.button variant="secondary" type="button" wire:click="openShiftForm">+ Disponibilidade</x-ui.button>
-            @endif
-            <div class="ml-auto flex items-center gap-3 text-xs text-slate-400">
-                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded border border-teal-200 bg-teal-50"></span> Disponível</span>
-                <span class="inline-flex items-center gap-1.5"><span class="h-3 w-4 rounded bg-slate-100"></span> Fora do horário</span>
-            </div>
-        </div>
-
         <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
             <div class="min-w-[900px]">
                 {{-- Header: hour ruler --}}
@@ -159,10 +163,10 @@
                             <div class="text-sm font-medium text-slate-700">{{ $lane['doctor']->name }}</div>
                             <div class="mt-1 flex flex-wrap gap-1">
                                 @foreach ($lane['shifts'] as $shift)
-                                    <span class="inline-flex items-center gap-1 rounded-full bg-teal-50 px-2 py-0.5 text-[11px] text-teal-700" wire:key="shift-{{ $shift->id }}">
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-teal-600 px-2 py-0.5 text-[11px] font-medium text-white" wire:key="shift-{{ $shift->id }}">
                                         {{ $shift->start_time }}–{{ $shift->end_time }}
                                         @if ($canManage)
-                                            <button type="button" wire:click="removeShift({{ $shift->id }})" class="text-teal-400 transition-colors hover:text-rose-500" title="Remover disponibilidade" aria-label="Remover disponibilidade">&times;</button>
+                                            <button type="button" wire:click="removeShift({{ $shift->id }})" class="text-teal-100 transition-colors hover:text-white" title="Remover disponibilidade" aria-label="Remover disponibilidade">&times;</button>
                                         @endif
                                     </span>
                                 @endforeach
@@ -177,9 +181,9 @@
                             @php($cell = $lane['slots'][$slot])
                             <div @class([
                                 'min-h-[56px] border-l border-slate-100 p-1',
-                                'bg-slate-100/70' => ! $cell['inShift'] && $cell['appointments']->isEmpty(),
-                                'bg-teal-50/40' => $cell['inShift'] && $cell['appointments']->isEmpty(),
-                                'group cursor-pointer transition-colors hover:bg-teal-100/60' => $canManage && $cell['inShift'] && $cell['appointments']->isEmpty(),
+                                'bg-slate-100' => ! $cell['inShift'] && $cell['appointments']->isEmpty(),
+                                'bg-teal-100/80 ring-1 ring-inset ring-teal-200' => $cell['inShift'] && $cell['appointments']->isEmpty(),
+                                'group cursor-pointer transition-colors hover:bg-teal-200' => $canManage && $cell['inShift'] && $cell['appointments']->isEmpty(),
                             ])
                                 @if ($canManage && $cell['inShift'] && $cell['appointments']->isEmpty()) wire:click="openBooking('{{ $dayDate }}', '{{ $slot }}', {{ $lane['doctor']->id }})" @endif>
                                 @foreach ($cell['appointments'] as $appointment)

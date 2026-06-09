@@ -91,6 +91,7 @@ test('a booked appointment appears on the grid', function () {
     $date = bookingMonday();
 
     Livewire::test(WeeklyCalendar::class)
+        ->set('view', 'week')
         ->call('openBooking', $date, '09:00')
         ->set('bookPatientId', $patient->id)
         ->set('bookServiceType', 'Consulta')
