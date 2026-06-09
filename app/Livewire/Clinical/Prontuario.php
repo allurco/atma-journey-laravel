@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Clinical;
 
+use App\Actions\Clinical\RecordDocumentSignature;
+use App\Actions\Clinical\ResendDocumentForSignature;
 use App\Actions\Clinical\SendDocumentForSignature;
 use App\Actions\Clinical\SendDocumentForSignatureData;
 use App\Actions\Patients\AppendTimelineEvent;
@@ -243,19 +245,23 @@ class Prontuario extends Component
         $this->reset('sendTemplateId', 'sendAppointmentId');
     }
 
-    public function markDocumentSigned(int $documentId, AppendTimelineEvent $appendTimelineEvent): void
+    public function markDocumentSigned(int $documentId, RecordDocumentSignature $recordDocumentSignature): void
     {
         $this->authorize('manage-patients');
 
         $document = $this->patient->documents()->awaitingSignature()->findOrFail($documentId);
-        $document->markSigned();
 
-        $appendTimelineEvent(new AppendTimelineEventData(
-            patientId: $this->patient->id,
-            type: TimelineEventType::Concluido,
-            title: 'Documento assinado',
-            description: $document->title.' — assinatura registrada.',
-        ));
+        // Manual/in-person signature — no patient device to record, so no IP/UA.
+        $recordDocumentSignature($document);
+    }
+
+    public function resendDocumentSignature(int $documentId, ResendDocumentForSignature $resendDocumentForSignature): void
+    {
+        $this->authorize('manage-patients');
+
+        $document = $this->patient->documents()->awaitingSignature()->findOrFail($documentId);
+
+        $resendDocumentForSignature($document);
     }
 
     public function addExamFinding(): void

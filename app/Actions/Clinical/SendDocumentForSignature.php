@@ -8,8 +8,11 @@ use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\SignatureStatus;
 use App\Enums\TimelineEventType;
+use App\Mail\DocumentSignatureRequestMail;
 use App\Models\DocumentTemplate;
+use App\Models\Patient;
 use App\Models\PatientDocument;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -17,8 +20,8 @@ use Illuminate\Support\Str;
  * Sends a blank template to a patient for signature. The template file is COPIED
  * into a per-document path so the patient signs a fixed snapshot — later edits to
  * the template never change an already-sent document. Creates the Pendente record,
- * issues a single-use signing token (the public link, e-mailed in slice 3), and
- * logs the send on the patient timeline.
+ * issues a single-use signing token, e-mails the patient the public signing link,
+ * and logs the send on the patient timeline.
  */
 class SendDocumentForSignature
 {
@@ -46,7 +49,7 @@ class SendDocumentForSignature
             'sent_at' => now(),
         ]);
 
-        $document->generateSignatureToken();
+        $token = $document->generateSignatureToken();
         $document->save();
 
         ($this->appendTimelineEvent)(new AppendTimelineEventData(
@@ -56,6 +59,23 @@ class SendDocumentForSignature
             description: $template->name.' — aguardando assinatura do paciente.',
         ));
 
+        $this->emailSigningLink($document, $token);
+
         return $document;
+    }
+
+    /**
+     * E-mail the patient the public signing link — only when they have an address;
+     * otherwise the link is delivered out-of-band (the front desk shares it).
+     */
+    private function emailSigningLink(PatientDocument $document, string $token): void
+    {
+        $patient = Patient::findOrFail($document->patient_id);
+
+        if ($patient->email === null || $patient->email === '') {
+            return;
+        }
+
+        Mail::to($patient->email)->send(new DocumentSignatureRequestMail($document, $token));
     }
 }
