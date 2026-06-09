@@ -17,6 +17,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\ParallelTesting;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -36,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureParallelTesting();
 
         // An already-authenticated user hitting a guest page (e.g. /login) lands on
         // their role's home — doctors on "Meu dia", everyone else on the dashboard.
@@ -60,6 +62,30 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(BudgetApproved::class, [RecordDomainMetric::class, 'whenBudgetApproved']);
         Event::listen(AppointmentNoShow::class, [RecordDomainMetric::class, 'whenNoShow']);
         Event::listen(AppointmentCancelled::class, [RecordDomainMetric::class, 'whenCancelled']);
+    }
+
+    /**
+     * Keep tenancy isolated across parallel test workers.
+     *
+     * `php artisan test --parallel` gives each worker its own central database by
+     * tokenizing the DEFAULT connection (atma_central_test_test_1, _2, …). Tenancy's
+     * central operations already ride that connection (tenancy.database.central_connection
+     * = DB_CONNECTION), and tenant databases are UUID-named, so they never collide.
+     * The only loose end is the separate `central` connection (reserved for DB-backed
+     * sessions): we point it at the same per-token database so isolation holds end-to-end
+     * even if a test ever exercises it. No-op outside parallel runs.
+     */
+    protected function configureParallelTesting(): void
+    {
+        if (! $this->app->runningUnitTests()) {
+            return;
+        }
+
+        ParallelTesting::setUpTestCase(function (): void {
+            $default = (string) config('database.default');
+            config(['database.connections.central.database' => config("database.connections.{$default}.database")]);
+            DB::purge('central');
+        });
     }
 
     /**

@@ -60,5 +60,7 @@ jobs:
       - name: Static analysis (Larastan / PHPStan)
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
 
-      - name: Tests (Pest)
-        run: php artisan test
+      - name: Tests (Pest, parallel)
+        # Each worker gets its own tokenized central database; tenant DBs are
+        # UUID-named, so workers stay isolated (see AppServiceProvider::configureParallelTesting).
+        run: php artisan test --parallel
