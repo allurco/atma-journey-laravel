@@ -8,6 +8,7 @@ use App\Actions\Patients\AppendTimelineEvent;
 use App\Actions\Patients\AppendTimelineEventData;
 use App\Enums\AppointmentStatus;
 use App\Enums\TimelineEventType;
+use App\Exceptions\SchedulingConflictException;
 use App\Models\Appointment;
 use App\Models\Patient;
 
@@ -16,13 +17,23 @@ use App\Models\Patient;
  * context the "Agendar" form collects: unit (unidade), a scheduling note, and the
  * patient's standing care needs. Every booking is recorded on the patient timeline
  * so nothing is forgotten. The lifecycle transitions are a separate action.
+ *
+ * When a doctor is assigned, the booking is gated against that doctor's availability:
+ * it must fall inside one of their shifts and not collide with an existing booking.
+ * A doctor-less ("unassigned") booking carries no availability to check, so it is
+ * never gated.
  */
 class ScheduleAppointment
 {
-    public function __construct(private AppendTimelineEvent $appendTimelineEvent) {}
+    public function __construct(
+        private AppendTimelineEvent $appendTimelineEvent,
+        private DoctorAvailability $availability,
+    ) {}
 
     public function __invoke(ScheduleAppointmentData $data): Appointment
     {
+        $this->guardDoctorAvailability($data);
+
         $appointment = Appointment::create([
             'patient_id' => $data->patientId,
             'doctor_id' => $data->doctorId,
@@ -51,6 +62,25 @@ class ScheduleAppointment
         ));
 
         return $appointment;
+    }
+
+    /**
+     * Refuse a booking that falls outside the assigned doctor's shifts or that
+     * would double-book them. No-op when the appointment has no doctor.
+     */
+    private function guardDoctorAvailability(ScheduleAppointmentData $data): void
+    {
+        if ($data->doctorId === null) {
+            return;
+        }
+
+        if (! $this->availability->isWithinShift($data->doctorId, $data->date, $data->startTime, $data->endTime)) {
+            throw SchedulingConflictException::outsideShift();
+        }
+
+        if ($this->availability->hasConflict($data->doctorId, $data->date, $data->startTime, $data->endTime)) {
+            throw SchedulingConflictException::doubleBooked();
+        }
     }
 
     /**
