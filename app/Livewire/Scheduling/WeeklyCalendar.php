@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Scheduling;
 
+use App\Actions\Scheduling\ConvertWaitlistEntry;
 use App\Actions\Scheduling\ScheduleAppointment;
 use App\Actions\Scheduling\ScheduleAppointmentData;
 use App\Actions\Scheduling\TransitionAppointment;
@@ -16,6 +17,7 @@ use App\Models\Patient;
 use App\Models\Procedure;
 use App\Models\SpecialCondition;
 use App\Models\Specialty;
+use App\Models\WaitlistEntry;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -98,6 +100,12 @@ class WeeklyCalendar extends Component
     public string $shiftStartTime = '08:00';
 
     public string $shiftEndTime = '12:00';
+
+    /** Day view: the closable fila de espera panel. */
+    public bool $showWaitlistPanel = false;
+
+    /** The waitlist entry being converted by a drop, linked on booking success. */
+    public ?int $convertingEntryId = null;
 
     public function mount(): void
     {
@@ -234,6 +242,33 @@ class WeeklyCalendar extends Component
         $this->showBooking = true;
     }
 
+    public function toggleWaitlistPanel(): void
+    {
+        $this->showWaitlistPanel = ! $this->showWaitlistPanel;
+    }
+
+    /**
+     * A waiting patient was dropped onto an open slot. Open the booking modal
+     * pre-filled from the entry and remember which entry we're converting, so a
+     * successful booking links and closes it.
+     */
+    public function startConversion(int $entryId, int $doctorId, string $date, string $time): void
+    {
+        $this->authorize('manage-scheduling');
+
+        $entry = WaitlistEntry::findOrFail($entryId);
+
+        $this->openBooking($date, $time, $doctorId);
+        $this->convertingEntryId = $entry->id;
+        $this->bookPatientId = $entry->patient_id;
+        $this->bookProcedureId = $entry->procedure_id;
+        $this->bookServiceType = $entry->service_type ?? '';
+        $this->bookUnit = $entry->unit ?? '';
+        $this->bookNotes = $entry->notes ?? '';
+        $this->bookEndTime = $this->computeEndTime($this->bookStartTime, $this->procedureDuration());
+        $this->loadPatientConditions();
+    }
+
     public function updatedBookPatientId(): void
     {
         $this->loadPatientConditions();
@@ -274,7 +309,7 @@ class WeeklyCalendar extends Component
         ]);
 
         try {
-            app(ScheduleAppointment::class)(new ScheduleAppointmentData(
+            $appointment = app(ScheduleAppointment::class)(new ScheduleAppointmentData(
                 patientId: (int) $validated['bookPatientId'],
                 date: $validated['bookDate'],
                 startTime: $validated['bookStartTime'],
@@ -292,6 +327,14 @@ class WeeklyCalendar extends Component
             $this->addError('bookStartTime', $e->getMessage());
 
             return;
+        }
+
+        // Drag-to-convert: this booking filled a waiting patient's slot.
+        if ($this->convertingEntryId !== null) {
+            app(ConvertWaitlistEntry::class)(
+                WaitlistEntry::findOrFail($this->convertingEntryId),
+                $appointment,
+            );
         }
 
         $this->showBooking = false;
@@ -346,6 +389,10 @@ class WeeklyCalendar extends Component
             'weekLabel' => $monday->format('d/m').' – '.$friday->format('d/m/Y'),
             'dayLabel' => $day->locale('pt_BR')->isoFormat('dddd, D [de] MMMM'),
             'dayLanes' => $this->view === 'day' ? $this->dayLanes() : collect(),
+            'waitlistEntries' => $this->view === 'day' && $this->showWaitlistPanel
+                ? WaitlistEntry::query()->open()->with(['patient', 'doctor'])
+                    ->orderByRaw("field(priority, 'alta', 'media', 'baixa')")->latest()->get()
+                : collect(),
             'specialties' => Specialty::where('active', true)->orderBy('name')->get(['id', 'name']),
             'shiftDoctors' => $this->showShiftForm ? Doctor::where('active', true)->orderBy('name')->get(['id', 'name']) : collect(),
             'patients' => $this->showBooking ? Patient::orderBy('name')->get(['id', 'name']) : collect(),
@@ -453,7 +500,7 @@ class WeeklyCalendar extends Component
         $this->reset([
             'bookPatientId', 'bookDoctorId', 'bookProcedureId',
             'bookServiceType', 'bookUnit', 'bookNotes', 'bookSpecialConditionIds',
-            'bookDate', 'bookStartTime', 'bookEndTime',
+            'bookDate', 'bookStartTime', 'bookEndTime', 'convertingEntryId',
         ]);
         $this->bookStartTime = '08:00';
         $this->bookEndTime = '09:00';

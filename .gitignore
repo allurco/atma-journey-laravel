@@ -36,3 +36,4 @@ yarn-error.log
 .playwright-mcp/
 agenda-day-*.png
 availability-*.png
+fila-*.png

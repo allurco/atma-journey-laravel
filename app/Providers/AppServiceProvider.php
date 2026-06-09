@@ -8,6 +8,7 @@ use App\Events\AppointmentCancelled;
 use App\Events\AppointmentNoShow;
 use App\Events\BudgetApproved;
 use App\Events\PipelineStageChanged;
+use App\Events\WaitlistEntryConverted;
 use App\Listeners\DropActivePipelineCard;
 use App\Listeners\RecordDomainMetric;
 use App\Models\User;
@@ -62,6 +63,7 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(BudgetApproved::class, [RecordDomainMetric::class, 'whenBudgetApproved']);
         Event::listen(AppointmentNoShow::class, [RecordDomainMetric::class, 'whenNoShow']);
         Event::listen(AppointmentCancelled::class, [RecordDomainMetric::class, 'whenCancelled']);
+        Event::listen(WaitlistEntryConverted::class, [RecordDomainMetric::class, 'whenWaitlistConverted']);
     }
 
     /**

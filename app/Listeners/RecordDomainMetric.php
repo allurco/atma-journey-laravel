@@ -8,6 +8,7 @@ use App\Events\AppointmentCancelled;
 use App\Events\AppointmentNoShow;
 use App\Events\BudgetApproved;
 use App\Events\PipelineStageChanged;
+use App\Events\WaitlistEntryConverted;
 use App\Models\Metric;
 use App\Providers\AppServiceProvider;
 
@@ -51,6 +52,16 @@ class RecordDomainMetric
         Metric::record('appointment.cancelled', [
             'appointment_id' => $event->appointment->id,
             'patient_id' => $event->appointment->patient_id,
+        ]);
+    }
+
+    public function whenWaitlistConverted(WaitlistEntryConverted $event): void
+    {
+        Metric::record('waitlist.converted', [
+            'waitlist_entry_id' => $event->entry->id,
+            'appointment_id' => $event->appointment->id,
+            'patient_id' => $event->entry->patient_id,
+            'doctor_id' => $event->appointment->doctor_id,
         ]);
     }
 }
