@@ -51,8 +51,17 @@
                         <td class="px-4 py-3">
                             <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $entry->status->badgeClasses() }}">{{ $entry->status->label() }}</span>
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <button type="button" wire:click="edit({{ $entry->id }})" class="text-sm font-medium text-teal-700 hover:text-teal-800">Editar</button>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-end gap-3 text-sm font-medium">
+                                @if ($entry->status === \App\Enums\WaitlistStatus::Aguardando)
+                                    <button type="button" wire:click="callEntry({{ $entry->id }})" class="text-sky-700 hover:text-sky-800">Chamar</button>
+                                @endif
+                                <button type="button" wire:click="openContacts({{ $entry->id }})" class="text-slate-500 hover:text-slate-700">Contatos</button>
+                                <button type="button" wire:click="edit({{ $entry->id }})" class="text-teal-700 hover:text-teal-800">Editar</button>
+                                @if (in_array($entry->status, [\App\Enums\WaitlistStatus::Aguardando, \App\Enums\WaitlistStatus::Chamado], true))
+                                    <button type="button" wire:click="cancelEntry({{ $entry->id }})" class="text-rose-600 hover:text-rose-700">Cancelar</button>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -118,6 +127,56 @@
                         <x-ui.button type="submit">{{ $editingId ? 'Salvar' : 'Adicionar' }}</x-ui.button>
                     </div>
                 </form>
+            </div>
+        </div>
+    @endif
+
+    {{-- Contact history --}}
+    @if ($contactsEntry)
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" wire:key="contacts-modal">
+            <div class="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
+                <div class="flex items-start justify-between">
+                    <div>
+                        <h2 class="text-lg font-semibold text-slate-800">Histórico de contato</h2>
+                        <p class="text-sm text-slate-500">{{ $contactsEntry->patient->name }}</p>
+                    </div>
+                    <button type="button" wire:click="closeContacts" class="text-slate-400 hover:text-slate-600" aria-label="Fechar">&times;</button>
+                </div>
+
+                <form wire:submit="addContact" class="mt-4 flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 p-3">
+                    <div>
+                        <label class="mb-1.5 block text-xs font-medium text-slate-600">Canal</label>
+                        <select wire:model="contactChannel" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40">
+                            @foreach ($channels as $channel)
+                                <option value="{{ $channel->value }}">{{ $channel->label() }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="min-w-[180px] flex-1">
+                        <label class="mb-1.5 block text-xs font-medium text-slate-600">Anotação</label>
+                        <input type="text" wire:model="contactNote" placeholder="O que aconteceu no contato…"
+                            class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/40" />
+                    </div>
+                    <x-ui.button type="submit">Registrar</x-ui.button>
+                </form>
+
+                <ul class="mt-4 space-y-3">
+                    @forelse ($contactsEntry->contacts as $contact)
+                        <li wire:key="contact-{{ $contact->id }}" class="flex items-start gap-3 border-b border-slate-100 pb-3 last:border-b-0">
+                            <span class="mt-0.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{{ $contact->channel?->label() ?? 'Contato' }}</span>
+                            <div class="min-w-0 flex-1">
+                                @if ($contact->note)
+                                    <p class="text-sm text-slate-700">{{ $contact->note }}</p>
+                                @endif
+                                <p class="mt-0.5 text-xs text-slate-400">
+                                    {{ $contact->contacted_at->format('d/m/Y H:i') }}@if ($contact->user) · {{ $contact->user->name }}@endif
+                                </p>
+                            </div>
+                        </li>
+                    @empty
+                        <li class="py-6 text-center text-sm text-slate-400">Nenhum contato registrado ainda.</li>
+                    @endforelse
+                </ul>
             </div>
         </div>
     @endif
