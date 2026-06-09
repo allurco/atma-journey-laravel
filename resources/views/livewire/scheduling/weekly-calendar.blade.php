@@ -1,4 +1,4 @@
-<div>
+<div x-data="{ draggingEntry: null }">
     @php($serviceColors = [
         'Consulta' => 'bg-teal-50 border-teal-200 text-teal-900',
         'Fisioterapia' => 'bg-emerald-50 border-emerald-200 text-emerald-900',
@@ -51,6 +51,7 @@
         </div>
         @if ($view === 'day' && $canManage)
             <x-ui.button variant="secondary" type="button" wire:click="openShiftForm">+ Disponibilidade</x-ui.button>
+            <x-ui.button variant="{{ $showWaitlistPanel ? 'primary' : 'secondary' }}" type="button" wire:click="toggleWaitlistPanel">Fila de espera</x-ui.button>
         @endif
         @if ($view === 'day')
             <div class="ml-auto flex items-center gap-3 text-xs text-slate-500">
@@ -146,7 +147,8 @@
 
     {{-- Day view: resource timeline (doctor lanes × hours) --}}
     @if ($view === 'day')
-        <div class="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <div class="flex items-start gap-4">
+        <div class="min-w-0 flex-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white">
             <div class="min-w-[900px]">
                 {{-- Header: hour ruler --}}
                 <div class="grid grid-cols-[180px_repeat(11,minmax(64px,1fr))] border-b border-slate-200">
@@ -185,7 +187,12 @@
                                 'bg-teal-100/80 ring-1 ring-inset ring-teal-200' => $cell['inShift'] && $cell['appointments']->isEmpty(),
                                 'group cursor-pointer transition-colors hover:bg-teal-200' => $canManage && $cell['inShift'] && $cell['appointments']->isEmpty(),
                             ])
-                                @if ($canManage && $cell['inShift'] && $cell['appointments']->isEmpty()) wire:click="openBooking('{{ $dayDate }}', '{{ $slot }}', {{ $lane['doctor']->id }})" @endif>
+                                @if ($canManage && $cell['inShift'] && $cell['appointments']->isEmpty())
+                                    wire:click="openBooking('{{ $dayDate }}', '{{ $slot }}', {{ $lane['doctor']->id }})"
+                                    x-on:dragover.prevent
+                                    x-on:drop="draggingEntry && ($wire.startConversion(draggingEntry, {{ $lane['doctor']->id }}, '{{ $dayDate }}', '{{ $slot }}'), draggingEntry = null)"
+                                    x-bind:class="draggingEntry ? 'ring-2 ring-inset ring-teal-500' : ''"
+                                @endif>
                                 @foreach ($cell['appointments'] as $appointment)
                                     <button type="button" wire:key="dappt-{{ $appointment->id }}" wire:click="openDetail({{ $appointment->id }})"
                                         class="mb-1 block w-full cursor-pointer rounded-lg border p-1.5 text-left text-[11px] transition-shadow last:mb-0 hover:shadow-md {{ $serviceColors[$appointment->service_type] ?? 'bg-slate-50 border-slate-200 text-slate-900' }}">
@@ -208,6 +215,36 @@
                     <div class="px-4 py-12 text-center text-sm text-slate-400">Nenhum médico para exibir nesta especialidade.</div>
                 @endforelse
             </div>
+        </div>
+
+        {{-- Fila de espera panel — drag a card onto an open slot to convert it --}}
+        @if ($showWaitlistPanel)
+            <aside class="w-72 flex-shrink-0 rounded-2xl border border-slate-200 bg-white">
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                    <h2 class="text-sm font-semibold text-slate-700">Fila de espera</h2>
+                    <button type="button" wire:click="toggleWaitlistPanel" class="text-slate-400 transition-colors hover:text-slate-600" aria-label="Fechar fila">&times;</button>
+                </div>
+                <p class="px-4 pt-2 text-xs text-slate-400">Arraste um paciente para um horário livre.</p>
+                <div class="max-h-[68vh] space-y-2 overflow-y-auto p-3">
+                    @forelse ($waitlistEntries as $entry)
+                        <div wire:key="wl-{{ $entry->id }}" draggable="true"
+                            x-on:dragstart="draggingEntry = {{ $entry->id }}"
+                            x-on:dragend="draggingEntry = null"
+                            class="cursor-grab rounded-xl border border-slate-200 bg-white p-3 transition-shadow hover:shadow-sm active:cursor-grabbing">
+                            <div class="flex items-center justify-between gap-2">
+                                <span class="truncate text-sm font-medium text-slate-800">{{ $entry->patient->name }}</span>
+                                <span class="flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium {{ $entry->priority->badgeClasses() }}">{{ $entry->priority->label() }}</span>
+                            </div>
+                            <p class="mt-1 truncate text-xs text-slate-500">
+                                {{ $entry->preferred_period->label() }}@if ($entry->doctor) · {{ $entry->doctor->name }}@endif
+                            </p>
+                        </div>
+                    @empty
+                        <p class="px-1 py-8 text-center text-sm text-slate-400">Ninguém na fila.</p>
+                    @endforelse
+                </div>
+            </aside>
+        @endif
         </div>
     @endif
 
