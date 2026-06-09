@@ -76,7 +76,11 @@
             "@php artisan config:clear --ansi",
             "@lint:check",
             "@stan",
-            "@php artisan test"
+            "@php artisan test --parallel"
+        ],
+        "test:parallel": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php artisan test --parallel"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
