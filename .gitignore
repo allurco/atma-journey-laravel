@@ -35,3 +35,4 @@ yarn-error.log
 # Playwright MCP screenshots
 .playwright-mcp/
 agenda-day-*.png
+availability-*.png

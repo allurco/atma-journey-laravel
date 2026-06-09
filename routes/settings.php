@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\DocumentTemplateController;
+use App\Livewire\Settings\Availability;
 use App\Livewire\Settings\ClinicProfile;
 use App\Livewire\Settings\Doctors;
 use App\Livewire\Settings\DocumentTemplates;
@@ -24,6 +25,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('settings/especialidades', Specialties::class)->name('especialidades');
     Route::get('settings/procedimentos', Procedures::class)->name('procedimentos');
     Route::get('settings/medicos', Doctors::class)->name('medicos');
+
+    // Doctor availability (shifts) — drawn on a 24h canvas, optionally copied across
+    // a date range. Operational scheduling config; gated by manage-scheduling so the
+    // front desk owns the roster (finer RBAC comes with the permissions page).
+    Route::get('settings/disponibilidade', Availability::class)
+        ->middleware('can:manage-scheduling')->name('disponibilidade');
 
     // Special-conditions catalog — a clinic configuration (admin via the
     // manage-clinic-settings gate), like especialidades/procedimentos. The front

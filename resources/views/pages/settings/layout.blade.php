@@ -9,6 +9,7 @@
         ['label' => 'Condições especiais', 'route' => 'condicoes-especiais', 'can' => 'manage-clinic-settings'],
         ['label' => 'Modelos de documentos', 'route' => 'modelos', 'can' => 'manage-clinic-settings'],
         ['label' => 'Médicos', 'route' => 'medicos'],
+        ['label' => 'Disponibilidade', 'route' => 'disponibilidade', 'can' => 'manage-scheduling'],
         ['label' => 'Equipe', 'route' => 'equipe', 'can' => 'manage-users'],
         ['label' => 'Integrações', 'route' => 'integracoes', 'can' => 'manage-clinic-settings'],
     ];
