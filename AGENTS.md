@@ -185,7 +185,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 # ATMA Journey — Project Guide
 
-Multitenant SaaS for health clinics that digitizes the *Método Atma Soma* patient journey.
+Multitenant SaaS for health clinics that digitizes the patient journey.
 Core promise: **no patient is forgotten at any stage of the funnel**. Unifies CRM/retention,
 scheduling, clinical records (prontuário), and finance into one timeline-based product. UI is
 Brazilian Portuguese. We are migrating it from `../atma-journey-ts` (React + Firebase) to Laravel 13.

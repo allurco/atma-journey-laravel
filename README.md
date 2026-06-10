@@ -1,6 +1,6 @@
 # ATMA Journey
 
-Multitenant SaaS for health clinics that digitizes the *Método Atma Soma* patient journey — unifying
+Multitenant SaaS for health clinics that digitizes the patient journey — unifying
 retention/CRM, scheduling, clinical records (prontuário), and finance on one timeline. Laravel 13 +
 Livewire 4, database-per-tenant via `stancl/tenancy`. UI is Brazilian Portuguese.
 

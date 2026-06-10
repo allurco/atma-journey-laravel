@@ -6,7 +6,7 @@ Full architecture: `docs/superpowers/specs/2026-06-05-atma-journey-program-desig
 
 ## What the product is
 
-A multitenant SaaS for health clinics that digitizes the *Método Atma Soma* patient journey.
+A multitenant SaaS for health clinics that digitizes the patient journey.
 Core promise: **no patient is forgotten at any stage of the funnel** (*nenhum paciente é esquecido*).
 It unifies retention/CRM, scheduling, clinical records, and finance on one timeline.
 
