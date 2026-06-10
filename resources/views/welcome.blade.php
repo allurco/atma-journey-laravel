@@ -40,7 +40,7 @@
 
                 <div class="mx-auto max-w-6xl px-6 pt-20 pb-16 text-center sm:pt-28">
                     <span class="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-4 py-1.5 text-sm font-medium text-teal-700">
-                        Método Atma Soma, agora digital
+                        A jornada do paciente, agora digital
                     </span>
 
                     <h1 class="mx-auto mt-8 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
@@ -132,7 +132,7 @@
                         Comece a cuidar de cada paciente até o fim da jornada
                     </h2>
                     <p class="mx-auto mt-4 max-w-xl text-lg text-teal-50">
-                        Crie a conta da sua clínica e leve o Método Atma Soma para o dia a dia da equipe.
+                        Crie a conta da sua clínica e leve a jornada do paciente para o dia a dia da equipe.
                     </p>
                     <div class="mt-8">
                         <a

@@ -8,7 +8,7 @@ This is the authoritative architectural reference. Individual feature PRDs live 
 
 ## 1. What ATMA Journey is
 
-A **multitenant SaaS for health clinics** that digitizes the *Método Atma Soma* patient journey.
+A **multitenant SaaS for health clinics** that digitizes the patient journey.
 Its core promise: **no patient is forgotten at any stage of the funnel**. It unifies CRM/retention,
 scheduling, clinical records (prontuário), and finance into one timeline-based product.
 
