@@ -29,6 +29,7 @@ PRDs are written **just-in-time** — the detailed spec for a PRD is authored ri
 | 15 | Retention Core — No-show & Quote Signals ✦ | v1.1 | ⬜ planned | `15-retention-core-signals.md` |
 | 16 | Clinical Signals — Exam AI & Doctor Approval ✦ | v1.1 | ⬜ planned | `16-clinical-signals.md` |
 | 17 | Patient Insights — doctor & front-desk glance panels | v1.1 | ⬜ planned | `17-patient-insights.md` |
+| 18 | Patient Timeline — unified clinical history (evolves PRD-2) | v1.1 | ⬜ planned | `18-patient-timeline.md` |
 
 **MVP = PRDs 0–5** (the sellable retention loop).
 
