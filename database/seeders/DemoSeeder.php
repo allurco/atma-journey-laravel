@@ -26,6 +26,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * Populates a tenant database with a coherent, presentation-ready dataset for a
@@ -201,10 +202,23 @@ class DemoSeeder extends Seeder
         $patients = [];
 
         foreach ($specs as $index => $spec) {
-            $patient = Patient::factory()->create([
-                'name' => $spec['name'],
-                'status' => $spec['stage']->patientStatus(),
-            ]);
+            // Explicit, deterministic data — no Faker (a dev-only dependency that
+            // is absent in production). firstOrCreate keyed on the demo e-mail keeps
+            // re-runs idempotent without colliding on the unique CPF index.
+            $patient = Patient::query()->firstOrCreate(
+                ['email' => $this->demoEmail($spec['name'])],
+                [
+                    'name' => $spec['name'],
+                    'phone' => sprintf('(11) 9%04d-%04d', 1100 + $index, 2200 + $index),
+                    'cpf' => $this->demoCpf($index),
+                    'birth_date' => Carbon::create(1980, 1, 1)->addDays($index * 53)->format('Y-m-d'),
+                    'address' => 'Rua das Demonstrações, '.(100 + $index).' — São Paulo/SP',
+                    'status' => $spec['stage']->patientStatus(),
+                    'blood_type' => ['A+', 'O+', 'B+', 'AB+', 'O-'][$index % 5],
+                    'allergies' => [],
+                    'lead_source' => ['website', 'meta', 'google', 'referral', 'manual'][$index % 5],
+                ],
+            );
 
             // Denormalized rollups (not mass-assignable) — drive the dashboard KPIs.
             $visits = $spec['visits'] ?? 0;
@@ -223,18 +237,20 @@ class DemoSeeder extends Seeder
             }
 
             $budget = isset($spec['budget'])
-                ? $this->makeBudget($patient, (float) $spec['value'], $spec['budget'], $procedureList[$index % count($procedureList)])
+                ? ($patient->budgets()->first() ?? $this->makeBudget($patient, (float) $spec['value'], $spec['budget'], $procedureList[$index % count($procedureList)]))
                 : null;
 
-            PipelineCard::query()->create([
-                'patient_id' => $patient->id,
-                'stage' => $spec['stage'],
-                'treatment' => $spec['treatment'],
-                'value' => $spec['value'],
-                'last_contact' => Carbon::now()->subDays($spec['contactDays']),
-                'contact_type' => ContactType::cases()[$index % count(ContactType::cases())],
-                'budget_id' => $budget?->id,
-            ]);
+            PipelineCard::query()->updateOrCreate(
+                ['patient_id' => $patient->id],
+                [
+                    'stage' => $spec['stage'],
+                    'treatment' => $spec['treatment'],
+                    'value' => $spec['value'],
+                    'last_contact' => Carbon::now()->subDays($spec['contactDays']),
+                    'contact_type' => ContactType::cases()[$index % count(ContactType::cases())],
+                    'budget_id' => $budget?->id,
+                ],
+            );
 
             $this->makeTimeline($patient, $spec['stage']);
 
@@ -273,6 +289,11 @@ class DemoSeeder extends Seeder
      */
     private function makeTimeline(Patient $patient, PipelineStage $stage): void
     {
+        // Idempotent: a re-run (without --fresh) must not pile up duplicate events.
+        if ($patient->timelineEvents()->exists()) {
+            return;
+        }
+
         TimelineEvent::query()->create([
             'patient_id' => $patient->id,
             'type' => TimelineEventType::Whatsapp,
@@ -343,16 +364,20 @@ class DemoSeeder extends Seeder
             [$hour, $minute] = explode(':', $slot['start']);
             $end = sprintf('%02d:%02d', (int) $hour + 1, (int) $minute);
 
-            Appointment::query()->create([
-                'patient_id' => $patient->id,
-                'doctor_id' => $doctor->id,
-                'procedure_id' => $procedure?->id,
-                'service_type' => $slot['service'],
-                'date' => $monday->copy()->addDays($slot['day'])->format('Y-m-d'),
-                'start_time' => $slot['start'],
-                'end_time' => $end,
-                'status' => $slot['status'],
-            ]);
+            Appointment::query()->updateOrCreate(
+                [
+                    'patient_id' => $patient->id,
+                    'date' => $monday->copy()->addDays($slot['day'])->format('Y-m-d'),
+                    'start_time' => $slot['start'],
+                ],
+                [
+                    'doctor_id' => $doctor->id,
+                    'procedure_id' => $procedure?->id,
+                    'service_type' => $slot['service'],
+                    'end_time' => $end,
+                    'status' => $slot['status'],
+                ],
+            );
         }
     }
 
@@ -365,6 +390,23 @@ class DemoSeeder extends Seeder
         $offset = (int) $monday->diffInDays(Carbon::now()->startOfDay(), false);
 
         return max(0, min(4, $offset));
+    }
+
+    /**
+     * Deterministic, namespaced e-mail used as the idempotency key for a demo
+     * patient (so re-runs match the existing row instead of duplicating it).
+     */
+    private function demoEmail(string $name): string
+    {
+        return Str::slug($name).'@paciente.demo';
+    }
+
+    /**
+     * A clearly-fake but unique (per index) formatted CPF — no Faker required.
+     */
+    private function demoCpf(int $index): string
+    {
+        return sprintf('%03d.%03d.%03d-%02d', 100 + $index, 200 + $index, 300 + $index, ($index % 89) + 10);
     }
 
     /**
