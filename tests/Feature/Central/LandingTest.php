@@ -11,6 +11,8 @@ it('renders the marketing landing page on the central domain', function () {
 
     $response->assertOk();
     $response->assertSee('nenhum paciente é esquecido');
+    $response->assertSee('jornada');           // the patient-journey framing
+    $response->assertDontSee('Atma Soma');     // the clinical method name is gone
     $response->assertSee(route('signup'), escape: false);
 });
 

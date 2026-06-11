@@ -5,8 +5,21 @@ declare(strict_types=1);
 use App\Livewire\Onboarding\Register;
 use Illuminate\Support\Facades\Route;
 
-// Central (marketing / onboarding) domain — no clinic auth lives here.
-Route::view('/', 'welcome')->name('home');
+// Universal "/" (tenancy is initialized for the whole web group, see
+// bootstrap/app.php). On the central (marketing) domain it serves the landing
+// page; on a clinic domain it's the app entry point — visitors go to login,
+// authenticated users to their role's home (dashboard / meu-dia).
+Route::get('/', function () {
+    if (tenancy()->initialized) {
+        $user = request()->user();
+
+        return $user
+            ? redirect()->route($user->homeRoute())
+            : redirect()->route('login');
+    }
+
+    return view('welcome');
+})->name('home');
 
 // Self-serve clinic signup — provisions a tenant + admin.
 Route::get('signup', Register::class)->name('signup');
