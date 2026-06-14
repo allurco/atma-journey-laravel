@@ -2,13 +2,22 @@
 
 declare(strict_types=1);
 
+use App\Models\User;
 use Illuminate\Support\Facades\File;
 
-test('the landing page renders without the Atma Soma method name', function () {
-    $this->get(route('home'))
-        ->assertOk()
-        ->assertSee('jornada')           // the patient-journey framing remains
-        ->assertDontSee('Atma Soma');    // the clinical method name is gone
+// These run in a TENANT context (see Pest.php). On a clinic domain "/" is the
+// app entry point, not the marketing page: visitors go to login, authenticated
+// users to their role's home. The marketing landing lives on the central domain
+// (covered by tests/Feature/Central/LandingTest.php).
+
+it('redirects a guest from / to the login page on a clinic domain', function () {
+    $this->get('/')->assertRedirect(route('login'));
+});
+
+it('redirects an authenticated user from / to their role home', function () {
+    $user = User::factory()->create(); // staff → dashboard
+
+    $this->actingAs($user)->get('/')->assertRedirect(route('dashboard'));
 });
 
 /**
